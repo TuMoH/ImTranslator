@@ -1,0 +1,11 @@
+apply plugin: 'java'
+
+task copyTestResources(type: Copy) {
+    from sourceSets.test.resources
+    into sourceSets.test.output.classesDir
+}
+processTestResources.dependsOn copyTestResources
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+}

@@ -1,0 +1,8 @@
+1
+00:00:27,160 --> 00:00:30,000
+<i>The Tesseract has awakened.</i>
+
+2
+00:00:31,760 --> 00:00:36,515
+It is on a little world, a human world.
+
