@@ -1,22 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context="com.timursoft.imtranslator.TranslateActivity">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler"
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:layout_scrollFlags="scroll|enterAlways"
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
+
+    </android.support.design.widget.AppBarLayout>
+
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutManager="LinearLayoutManager" />
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-    <xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller
-        android:id="@+id/fast_scroller"
-        android:layout_width="@dimen/fast_scroller_width"
-        android:layout_height="match_parent"
-        android:layout_alignParentRight="true"
-        app:rfs_handleColor="@color/colorAccent" />
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layoutManager="LinearLayoutManager" />
 
-</RelativeLayout>
+        <xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller
+            android:id="@+id/fast_scroller"
+            android:layout_width="@dimen/fast_scroller_width"
+            android:layout_height="match_parent"
+            android:layout_alignParentRight="true"
+            app:rfs_handleColor="@color/colorAccent" />
+
+    </RelativeLayout>
+
+</android.support.design.widget.CoordinatorLayout>

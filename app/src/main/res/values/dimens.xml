@@ -4,5 +4,6 @@
     <dimen name="card_horizontal_margin">16dp</dimen>
     <dimen name="card_bottom_margin">10dp</dimen>
     <dimen name="card_padding">10dp</dimen>
-    <dimen name="fast_scroller_width">20dp</dimen>
+    <dimen name="fast_scroller_width">@dimen/card_horizontal_margin</dimen>
+    <dimen name="subtitle_edit_text_vertical_padding">5dp</dimen>
 </resources>

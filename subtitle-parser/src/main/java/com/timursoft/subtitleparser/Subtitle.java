@@ -17,6 +17,8 @@ public class Subtitle {
      */
     public String content = "";
 
+    public String translatedContent = null;
+
     @Override
     public String toString() {
         return "Subtitle{" +

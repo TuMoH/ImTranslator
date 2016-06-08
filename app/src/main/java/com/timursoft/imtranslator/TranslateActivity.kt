@@ -2,6 +2,9 @@ package com.timursoft.imtranslator
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.Toolbar
+import android.view.Menu
+import android.view.MenuItem
 import android.view.animation.OvershootInterpolator
 import com.timursoft.subtitleparser.FormatSRT
 import com.timursoft.subtitleparser.Subtitle
@@ -26,17 +29,20 @@ class TranslateActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_translate)
 
-        var subtitles = ArrayList<Subtitle>()
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        val subtitles = ArrayList<Subtitle>()
         try {
-            var formatSRT = FormatSRT()
-            var timedTextObject = formatSRT.parseFile("name", assets.open("example.srt"))
+            val formatSRT = FormatSRT()
+            val timedTextObject = formatSRT.parseFile("name", assets.open("example.srt"))
             subtitles.addAll(timedTextObject.subtitles.values)
         } catch (e: IOException) {
             e.printStackTrace()
         }
 
-        var adapter = SubtitleRecyclerAdapter(subtitles)
-        var alphaAdapter = ScaleInAnimationAdapter(adapter);
+        val adapter = SubtitleRecyclerAdapter(subtitles)
+        val alphaAdapter = ScaleInAnimationAdapter(adapter);
         alphaAdapter.setFirstOnly(true);
         alphaAdapter.setDuration(500);
         alphaAdapter.setInterpolator(OvershootInterpolator(.5f));
@@ -50,4 +56,18 @@ class TranslateActivity : AppCompatActivity() {
         //
         //
     }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_translate, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
+        when(menuItem.itemId) {
+            android.R.id.home -> onBackPressed()
+//            R.id.action_save ->
+        }
+        return super.onOptionsItemSelected(menuItem)
+    }
+
 }

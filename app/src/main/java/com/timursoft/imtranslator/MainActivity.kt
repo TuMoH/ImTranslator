@@ -8,6 +8,7 @@ import android.view.View
 
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
+import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,6 +20,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        setSupportActionBar(toolbar)
 
         startActivity(Intent(this, TranslateActivity::class.java))
     }
@@ -34,11 +36,11 @@ class MainActivity : AppCompatActivity() {
                 .start();
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == CHOOSE_FILE_RESULT_CODE) {
             if (resultCode == RESULT_OK) {
-                val filePath = data.getStringExtra(FilePickerActivity.RESULT_FILE_PATH)
+                val filePath = data?.getStringExtra(FilePickerActivity.RESULT_FILE_PATH)
                 Log.e(TAG, "Filepath = " + filePath)
                 val intent = Intent(this, TranslateActivity::class.java)
                 intent.putExtra(TranslateActivity.FILE_PATH, filePath)
