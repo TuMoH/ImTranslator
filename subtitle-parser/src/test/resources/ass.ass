@@ -1,0 +1,10 @@
+﻿﻿[Script Info]
+info
+
+[V4+ Styles]
+styles
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:05.10,credits (top),,0000,0000,0000,,{\pos(320,13)}Test-group {\b1\c&H0BA1C6&}ImTr{\c&H645937&\b0} present
+Dialogue: 0,0:00:53.56,0:00:57.97,Default,,0000,0000,0000,,- Your Majesty! \N- eunuch Pang nothing to blame

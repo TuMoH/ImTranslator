@@ -2,28 +2,19 @@ package com.timursoft.subtitleparser;
 
 public class Subtitle {
 
-    public Style style;
-    public Region region;
+    public String content;
+    public int startTime;
+    public int endTime;
+    public String style;
 
-    public Time start;
-    public Time end;
-
-    /**
-     * Raw content, before cleaning up templates and markup.
-     */
-    public String rawContent = "";
-    /**
-     * Cleaned-up subtitle content.
-     */
-    public String content = "";
-
-    public String translatedContent = null;
-
-    @Override
-    public String toString() {
-        return "Subtitle{" +
-                start + ".." + end +
-                ", " + (style != null ? style.iD : null) + ", " + region + ": " + content +
-                '}';
+    public Subtitle() {
     }
+
+    public Subtitle(String content, int startTime, int endTime, String style) {
+        this.content = content;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.style = style;
+    }
+
 }
