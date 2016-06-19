@@ -1,20 +1,18 @@
 package com.timursoft.imtranslator
 
 import android.os.Bundle
+import android.os.Environment
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
+import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.view.Menu
 import android.view.MenuItem
-import android.view.animation.OvershootInterpolator
+import android.view.MotionEvent
+import android.view.View
 import com.timursoft.subtitleparser.FormatSRT
+import com.timursoft.subtitleparser.IOHelper
 import com.timursoft.subtitleparser.Subtitle
-import jp.wasabeef.recyclerview.adapters.AlphaInAnimationAdapter
-import jp.wasabeef.recyclerview.adapters.ScaleInAnimationAdapter
-import jp.wasabeef.recyclerview.adapters.SlideInLeftAnimationAdapter
-import jp.wasabeef.recyclerview.adapters.SlideInRightAnimationAdapter
-import jp.wasabeef.recyclerview.animators.FadeInAnimator
-import jp.wasabeef.recyclerview.animators.LandingAnimator
-import jp.wasabeef.recyclerview.animators.SlideInDownAnimator
+import com.timursoft.subtitleparser.SubtitleObject
 import kotlinx.android.synthetic.main.activity_translate.*
 import java.io.IOException
 import java.util.*
@@ -23,7 +21,14 @@ class TranslateActivity : AppCompatActivity() {
 
     companion object {
         val FILE_PATH = "FILE_PATH"
+        val EDITED = "EDITED"
     }
+
+    var timer: Timer? = null
+    var subtitleObject: SubtitleObject? = null
+    var adapter: SubtitleRecyclerAdapter? = null
+    var lastPosition = 0
+    val subtitles = ArrayList<Subtitle>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,30 +36,83 @@ class TranslateActivity : AppCompatActivity() {
 
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        val subtitles = ArrayList<Subtitle>()
         try {
+//            val filePath = intent.getStringExtra(FILE_PATH)
             val formatSRT = FormatSRT()
-            val timedTextObject = formatSRT.parseFile("name", assets.open("example.srt"))
-            subtitles.addAll(timedTextObject.subtitles.values)
+            subtitleObject = formatSRT.parse(IOHelper.streamToString(assets.open("example.srt")))
+            if (subtitleObject != null) {
+                subtitles.addAll(subtitleObject!!.subtitles.values)
+            }
         } catch (e: IOException) {
             e.printStackTrace()
         }
 
-        val adapter = SubtitleRecyclerAdapter(subtitles)
-        val alphaAdapter = ScaleInAnimationAdapter(adapter);
-        alphaAdapter.setFirstOnly(true);
-        alphaAdapter.setDuration(500);
-        alphaAdapter.setInterpolator(OvershootInterpolator(.5f));
-        recycler.adapter = alphaAdapter
-        recycler.itemAnimator = FadeInAnimator()
-
+        adapter = SubtitleRecyclerAdapter(subtitles)
+        recycler.adapter = adapter
         fast_scroller.setRecyclerView(recycler)
         recycler.addOnScrollListener(fast_scroller.onScrollListener)
+        recycler.addOnScrollListener(MyScrollListener())
 
-        //        String filePath = getIntent().getStringExtra(FILE_PATH)
-        //
-        //
+        video.setOnTouchListener { view, motionEvent ->
+            if (MotionEvent.ACTION_DOWN == motionEvent.action) {
+                if (video.isPlaying) {
+                    video.pause()
+                    ic_play_pause.visibility = View.VISIBLE
+                    timer?.cancel()
+                    timer = null
+                } else {
+                    ic_play_pause.visibility = View.GONE
+                    video.start()
+//                    createTimer()
+                }
+                return@setOnTouchListener true
+            }
+            return@setOnTouchListener false
+        }
+        video.setVideoPath(Environment.getExternalStorageDirectory().absolutePath + "/example.mp4")
+        video.requestFocus(0)
+    }
+
+    inner class MyScrollListener : RecyclerView.OnScrollListener() {
+        override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
+            super.onScrolled(recyclerView, dx, dy)
+            val firstVisibleItem = (recyclerView?.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition();
+            if (firstVisibleItem != lastPosition) {
+                lastPosition = firstVisibleItem
+                video.seekTo(subtitles[lastPosition].startTime)
+            }
+        }
+
+        override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
+            super.onScrollStateChanged(recyclerView, newState)
+        }
+    }
+
+    fun createTimer() {
+        timer?.cancel()
+        timer = null
+
+        var pos = -1
+        val videoTime = video.currentPosition
+        subtitles.forEach {
+            if (videoTime >= it.startTime && videoTime < it.endTime) {
+                val delay = it.endTime - videoTime
+
+                runOnUiThread({ (recycler.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(pos, 0) })
+
+                timer = Timer()
+                timer!!.schedule(ScrollTimerTask(), delay.toLong())
+                return@forEach
+            } else if (videoTime < it.startTime) {
+                val delay = it.startTime - videoTime
+                timer = Timer()
+                timer!!.schedule(ScrollTimerTask(), delay.toLong())
+                return@forEach
+            }
+            pos++
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -63,11 +121,28 @@ class TranslateActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
-        when(menuItem.itemId) {
+        when (menuItem.itemId) {
             android.R.id.home -> onBackPressed()
 //            R.id.action_save ->
         }
         return super.onOptionsItemSelected(menuItem)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle?) {
+        super.onSaveInstanceState(outState)
+        outState?.putSerializable(EDITED, adapter?.edited)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
+        super.onRestoreInstanceState(savedInstanceState)
+        val edited = savedInstanceState?.getSerializable(EDITED) as HashMap<Int, String>
+        adapter?.edited = edited
+    }
+
+    inner class ScrollTimerTask : TimerTask() {
+        override fun run() {
+            createTimer()
+        }
     }
 
 }

@@ -7,11 +7,6 @@
         android:id="@+id/action_save"
         android:icon="@drawable/ic_save"
         android:title="Save"
-        app:showAsAction="always" />
-
-    <item
-        android:id="@+id/action_revert"
-        android:title="Отменить"
         app:showAsAction="never" />
 
 </menu>
