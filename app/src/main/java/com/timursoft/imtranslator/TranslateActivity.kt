@@ -5,6 +5,7 @@ import android.os.Environment
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -65,28 +66,33 @@ class TranslateActivity : AppCompatActivity() {
                 } else {
                     ic_play_pause.visibility = View.GONE
                     video.start()
-//                    createTimer()
+                    createTimer()
                 }
                 return@setOnTouchListener true
             }
             return@setOnTouchListener false
         }
         video.setVideoPath(Environment.getExternalStorageDirectory().absolutePath + "/example.mp4")
+        video.seekTo(28000)
         video.requestFocus(0)
     }
 
     inner class MyScrollListener : RecyclerView.OnScrollListener() {
+        var lastState = 0
         override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
             super.onScrolled(recyclerView, dx, dy)
             val firstVisibleItem = (recyclerView?.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition();
             if (firstVisibleItem != lastPosition) {
                 lastPosition = firstVisibleItem
-                video.seekTo(subtitles[lastPosition].startTime)
+                if (lastState > 0) {
+                    video.seekTo(subtitles[lastPosition].startTime)
+                }
             }
         }
 
         override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
             super.onScrollStateChanged(recyclerView, newState)
+            lastState = newState
         }
     }
 
@@ -94,24 +100,21 @@ class TranslateActivity : AppCompatActivity() {
         timer?.cancel()
         timer = null
 
-        var pos = -1
         val videoTime = video.currentPosition
-        subtitles.forEach {
-            if (videoTime >= it.startTime && videoTime < it.endTime) {
-                val delay = it.endTime - videoTime
-
-                runOnUiThread({ (recycler.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(pos, 0) })
-
+        for (i in 0..subtitles.size) {
+            val subtitle = subtitles[i]
+            if (videoTime < subtitle.endTime) {
+                val delay: Int
+                if (videoTime >= subtitle.startTime) {
+                    runOnUiThread({ (recycler.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(i, 0) })
+                    delay = subtitles[i + 1].startTime - videoTime
+                } else {
+                    delay = subtitle.startTime - videoTime
+                }
                 timer = Timer()
                 timer!!.schedule(ScrollTimerTask(), delay.toLong())
-                return@forEach
-            } else if (videoTime < it.startTime) {
-                val delay = it.startTime - videoTime
-                timer = Timer()
-                timer!!.schedule(ScrollTimerTask(), delay.toLong())
-                return@forEach
+                return
             }
-            pos++
         }
     }
 
