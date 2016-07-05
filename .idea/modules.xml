@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/ImTranslator.iml" filepath="$PROJECT_DIR$/ImTranslator.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/subtitle-parser/subtitle-parser.iml" filepath="$PROJECT_DIR$/subtitle-parser/subtitle-parser.iml" />
     </modules>
   </component>
 </project>

@@ -1,1 +1,1 @@
-include ':app', ':subtitle-parser'
+include ':app'
