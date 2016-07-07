@@ -1,24 +1,27 @@
 package com.timursoft.imtranslator
 
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
+import android.widget.VideoView
 import com.timursoft.subtitleparser.FormatSRT
 import com.timursoft.subtitleparser.IOHelper
 import com.timursoft.subtitleparser.Subtitle
 import com.timursoft.subtitleparser.SubtitleObject
 import kotlinx.android.synthetic.main.activity_translate.*
+import java.io.FileInputStream
 import java.io.IOException
+import java.io.InputStream
 import java.util.*
 
-class TranslateActivity : AppCompatActivity() {
+open class TranslateActivity : AppCompatActivity() {
 
     companion object {
         val FILE_PATH = "FILE_PATH"
@@ -28,7 +31,6 @@ class TranslateActivity : AppCompatActivity() {
     var timer: Timer? = null
     var subtitleObject: SubtitleObject? = null
     var adapter: SubtitleRecyclerAdapter? = null
-    var lastPosition = 0
     val subtitles = ArrayList<Subtitle>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,9 +42,8 @@ class TranslateActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
         try {
-//            val filePath = intent.getStringExtra(FILE_PATH)
             val formatSRT = FormatSRT()
-            subtitleObject = formatSRT.parse(IOHelper.streamToString(assets.open("example.srt")))
+            subtitleObject = formatSRT.parse(IOHelper.streamToString(getSubtitleIS()))
             if (subtitleObject != null) {
                 subtitles.addAll(subtitleObject!!.subtitles.values)
             }
@@ -54,6 +55,7 @@ class TranslateActivity : AppCompatActivity() {
         recycler.adapter = adapter
         fast_scroller.setRecyclerView(recycler)
         recycler.addOnScrollListener(fast_scroller.onScrollListener)
+        fast_scroller.listener = { position -> videoGoTo(position) }
         recycler.addOnScrollListener(MyScrollListener())
 
         video.setOnTouchListener { view, motionEvent ->
@@ -66,37 +68,40 @@ class TranslateActivity : AppCompatActivity() {
                 } else {
                     ic_play_pause.visibility = View.GONE
                     video.start()
-                    createTimer()
+                    scrollRecycler()
                 }
                 return@setOnTouchListener true
             }
             return@setOnTouchListener false
         }
-        video.setVideoPath(Environment.getExternalStorageDirectory().absolutePath + "/example.mp4")
+        setVideoContent(video)
         video.seekTo(28000)
         video.requestFocus(0)
     }
 
+    open fun getSubtitleIS(): InputStream {
+        return FileInputStream(intent.getStringExtra(FILE_PATH))
+    }
+
+    open fun setVideoContent(videoView: VideoView) {
+        video.setVideoPath(Environment.getExternalStorageDirectory().absolutePath + "/example.mp4")
+    }
+
     inner class MyScrollListener : RecyclerView.OnScrollListener() {
-        var lastState = 0
-        override fun onScrolled(recyclerView: RecyclerView?, dx: Int, dy: Int) {
-            super.onScrolled(recyclerView, dx, dy)
-            val firstVisibleItem = (recyclerView?.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition();
-            if (firstVisibleItem != lastPosition) {
-                lastPosition = firstVisibleItem
-                if (lastState > 0) {
-                    video.seekTo(subtitles[lastPosition].startTime)
+        var lastPosition = 0
+        override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
+            super.onScrollStateChanged(recyclerView, newState)
+            if (newState == 0) {
+                val firstVisibleItem = (recyclerView?.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition();
+                if (firstVisibleItem != lastPosition) {
+                    lastPosition = firstVisibleItem
+                    videoGoTo(firstVisibleItem)
                 }
             }
         }
-
-        override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
-            super.onScrollStateChanged(recyclerView, newState)
-            lastState = newState
-        }
     }
 
-    fun createTimer() {
+    fun scrollRecycler() {
         timer?.cancel()
         timer = null
 
@@ -116,6 +121,10 @@ class TranslateActivity : AppCompatActivity() {
                 return
             }
         }
+    }
+
+    fun videoGoTo(position: Int) {
+        video.seekTo(subtitles[position].startTime)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -144,7 +153,7 @@ class TranslateActivity : AppCompatActivity() {
 
     inner class ScrollTimerTask : TimerTask() {
         override fun run() {
-            createTimer()
+            scrollRecycler()
         }
     }
 

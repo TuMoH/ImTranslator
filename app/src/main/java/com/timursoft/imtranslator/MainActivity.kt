@@ -21,19 +21,24 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-
-        startActivity(Intent(this, TranslateActivity::class.java))
     }
 
     fun onClick(view: View) {
-        // todo check permission
-        MaterialFilePicker()
-                .withActivity(this)
-                .withRequestCode(CHOOSE_FILE_RESULT_CODE)
+        when (view.id) {
+            R.id.button -> {
+                // todo check permission
+                MaterialFilePicker()
+                        .withActivity(this)
+                        .withRequestCode(CHOOSE_FILE_RESULT_CODE)
 //                .withFilter(Pattern.compile(".*\\.txt$")) // Filtering files and directories by file name using regexp
 //                .withFilterDirectories(true) // Set directories filterable (false by default)
 //                .withHiddenFiles(true) // Show hidden files and folders
-                .start();
+                        .start();
+            }
+            R.id.button_example -> {
+                startActivity(Intent(this, ExampleTranslateActivity::class.java))
+            }
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

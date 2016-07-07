@@ -63,7 +63,7 @@
             android:layout_height="match_parent"
             app:layoutManager="LinearLayoutManager" />
 
-        <xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller
+        <com.timursoft.imtranslator.FastScroller
             android:id="@+id/fast_scroller"
             android:layout_width="@dimen/fast_scroller_width"
             android:layout_height="match_parent"
