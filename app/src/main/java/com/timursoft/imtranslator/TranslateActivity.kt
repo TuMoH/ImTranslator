@@ -1,6 +1,5 @@
 package com.timursoft.imtranslator
 
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.support.v7.app.AppCompatActivity
@@ -32,6 +31,7 @@ open class TranslateActivity : AppCompatActivity() {
     var subtitleObject: SubtitleObject? = null
     var adapter: SubtitleRecyclerAdapter? = null
     val subtitles = ArrayList<Subtitle>()
+    val scrollListener = MyScrollListener()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,31 +52,31 @@ open class TranslateActivity : AppCompatActivity() {
         }
 
         adapter = SubtitleRecyclerAdapter(subtitles)
-        recycler.adapter = adapter
-        fast_scroller.setRecyclerView(recycler)
-        recycler.addOnScrollListener(fast_scroller.onScrollListener)
+        recycler_view.adapter = adapter
+        fast_scroller.setRecyclerView(recycler_view)
+        recycler_view.addOnScrollListener(fast_scroller.onScrollListener)
         fast_scroller.listener = { position -> videoGoTo(position) }
-        recycler.addOnScrollListener(MyScrollListener())
+        recycler_view.addOnScrollListener(scrollListener)
 
-        video.setOnTouchListener { view, motionEvent ->
+        video_view.setOnTouchListener { view, motionEvent ->
             if (MotionEvent.ACTION_DOWN == motionEvent.action) {
-                if (video.isPlaying) {
-                    video.pause()
+                if (video_view.isPlaying) {
+                    video_view.pause()
                     ic_play_pause.visibility = View.VISIBLE
                     timer?.cancel()
                     timer = null
                 } else {
                     ic_play_pause.visibility = View.GONE
-                    video.start()
+                    video_view.start()
                     scrollRecycler()
                 }
                 return@setOnTouchListener true
             }
             return@setOnTouchListener false
         }
-        setVideoContent(video)
-        video.seekTo(28000)
-        video.requestFocus(0)
+        setVideoContent(video_view)
+        video_view.seekTo(28000)
+        video_view.requestFocus(0)
     }
 
     open fun getSubtitleIS(): InputStream {
@@ -84,15 +84,17 @@ open class TranslateActivity : AppCompatActivity() {
     }
 
     open fun setVideoContent(videoView: VideoView) {
-        video.setVideoPath(Environment.getExternalStorageDirectory().absolutePath + "/example.mp4")
+        video_view.setVideoPath(Environment.getExternalStorageDirectory().absolutePath + "/example.mp4")
     }
 
     inner class MyScrollListener : RecyclerView.OnScrollListener() {
         var lastPosition = 0
+        var currentState = 0
         override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
             super.onScrollStateChanged(recyclerView, newState)
-            if (newState == 0) {
-                val firstVisibleItem = (recyclerView?.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition();
+            currentState = newState
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                val firstVisibleItem = (recyclerView?.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
                 if (firstVisibleItem != lastPosition) {
                     lastPosition = firstVisibleItem
                     videoGoTo(firstVisibleItem)
@@ -105,13 +107,17 @@ open class TranslateActivity : AppCompatActivity() {
         timer?.cancel()
         timer = null
 
-        val videoTime = video.currentPosition
+        val videoTime = video_view.currentPosition
         for (i in 0..subtitles.size) {
             val subtitle = subtitles[i]
             if (videoTime < subtitle.endTime) {
                 val delay: Int
                 if (videoTime >= subtitle.startTime) {
-                    runOnUiThread({ (recycler.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(i, 0) })
+                    runOnUiThread({
+                        if (scrollListener.currentState == RecyclerView.SCROLL_STATE_IDLE) {
+                            (recycler_view.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(i, 0)
+                        }
+                    })
                     delay = subtitles[i + 1].startTime - videoTime
                 } else {
                     delay = subtitle.startTime - videoTime
@@ -124,7 +130,7 @@ open class TranslateActivity : AppCompatActivity() {
     }
 
     fun videoGoTo(position: Int) {
-        video.seekTo(subtitles[position].startTime)
+        video_view.seekTo(subtitles[position].startTime)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

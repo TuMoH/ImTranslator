@@ -29,7 +29,7 @@
                 app:layout_scrollFlags="scroll|enterAlways">
 
                 <VideoView
-                    android:id="@+id/video"
+                    android:id="@+id/video_view"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/video_height"/>
 
@@ -58,7 +58,7 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/recycler"
+            android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layoutManager="LinearLayoutManager" />
