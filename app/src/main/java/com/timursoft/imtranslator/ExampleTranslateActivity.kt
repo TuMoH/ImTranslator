@@ -17,9 +17,9 @@ class ExampleTranslateActivity : TranslateActivity() {
         return result
     }
 
-//    override fun setVideoContent(videoView: VideoView) {
-//        val uri = Uri.parse("android.resource://" + packageName + "/" + R.raw.example_video)
-//        videoView.setVideoURI(uri)
-//    }
+    override fun setVideoContent(videoView: VideoView) {
+        val uri = Uri.parse("android.resource://" + packageName + "/" + R.raw.example_video)
+        videoView.setVideoURI(uri)
+    }
 
 }
