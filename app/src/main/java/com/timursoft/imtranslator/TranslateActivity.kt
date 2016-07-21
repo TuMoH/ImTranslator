@@ -1,16 +1,14 @@
 package com.timursoft.imtranslator
 
 import android.os.Bundle
-import android.os.Environment
+import android.support.design.widget.CoordinatorLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
-import android.widget.VideoView
+import com.devbrackets.android.exomedia.listener.OnPreparedListener
 import com.timursoft.subtitleparser.FormatSRT
 import com.timursoft.subtitleparser.IOHelper
 import com.timursoft.subtitleparser.Subtitle
@@ -18,7 +16,6 @@ import com.timursoft.subtitleparser.SubtitleObject
 import kotlinx.android.synthetic.main.activity_translate.*
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 import java.io.FileInputStream
 import java.io.IOException
@@ -38,8 +35,8 @@ open class TranslateActivity : AppCompatActivity() {
     var adapter: SubtitleRecyclerAdapter? = null
     var layoutManager: LinearLayoutManager? = null
     val subtitles = ArrayList<Subtitle>()
-    val scrollListener = MyScrollListener()
     val publishSubject: PublishSubject<Int> = PublishSubject.create()
+    var lastPlayedPosition = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +47,7 @@ open class TranslateActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
         try {
+            // todo поддержка всех форматов
             val formatSRT = FormatSRT()
             subtitleObject = formatSRT.parse(IOHelper.streamToString(getSubtitleIS()))
             if (subtitleObject != null) {
@@ -64,8 +62,14 @@ open class TranslateActivity : AppCompatActivity() {
         layoutManager = recycler_view.layoutManager as LinearLayoutManager
         fast_scroller.setRecyclerView(recycler_view)
         recycler_view.addOnScrollListener(fast_scroller.onScrollListener)
-        fast_scroller.listener = { position -> videoGoTo(position) }
-        recycler_view.addOnScrollListener(scrollListener)
+
+        (recycler_layout.layoutParams as CoordinatorLayout.LayoutParams).behavior =
+                StopVideoBehavior(touchListener = { view, motionEvent ->
+                    if (MotionEvent.ACTION_DOWN == motionEvent.action && video_view.isPlaying) {
+                        video_view.pause()
+                        ic_play_pause.visibility = View.VISIBLE
+                    }
+                })
 
         video_view.setOnTouchListener { view, motionEvent ->
             if (MotionEvent.ACTION_DOWN == motionEvent.action) {
@@ -73,21 +77,32 @@ open class TranslateActivity : AppCompatActivity() {
                     video_view.pause()
                     ic_play_pause.visibility = View.VISIBLE
                 } else {
+                    val position = layoutManager!!.findFirstVisibleItemPosition()
+                    if (position != lastPlayedPosition) {
+                        video_view.seekTo(subtitles[position].startTime - VIDEO_OFFSET)
+                    }
                     ic_play_pause.visibility = View.GONE
                     video_view.start()
-                    publishSubject.onNext(getCurrentSubtitlePosition())
+                    publishSubject.onNext(position)
                 }
                 return@setOnTouchListener true
             }
             return@setOnTouchListener false
         }
+        video_view.setMeasureBasedOnAspectRatioEnabled(true)
+        // todo 1000 мало
+        video_view.setOnPreparedListener(OnPreparedListener { video_view.layoutParams.height = 1000 })
         setVideoContent(video_view)
-        video_view.requestFocus(0)
+        video_view.requestFocus(View.FOCUSABLES_ALL)
 
         val psShare = publishSubject.share()
 
-        psShare.observeOn(AndroidSchedulers.mainThread())
-                .subscribe { layoutManager?.scrollToPositionWithOffset(it, 0) }
+        psShare.doOnEach { lastPlayedPosition = it.value as Int }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    // todo нужен плавный скролл
+                    layoutManager?.scrollToPositionWithOffset(it, 0)
+                }
 
         psShare.map { it + 1 }
                 .filter { it < subtitles.size }
@@ -95,15 +110,10 @@ open class TranslateActivity : AppCompatActivity() {
                     val delay = subtitles[it].startTime - video_view.currentPosition
                     Observable.timer(delay.toLong(), TimeUnit.MILLISECONDS)
                 }
+                // todo добавить подсветку итема ???
+                // todo отписаться при стопе
+                // todo rxLifeCycle
                 .filter { video_view.isPlaying }
-                // todo проверить не было ли скролла
-                // todo добавить подсветку итема
-                .filter { scrollListener.currentState == RecyclerView.SCROLL_STATE_IDLE }
-//                .filter {
-//                    val subtitle = subtitles[it]
-//                    val videoTime = video_view.currentPosition
-//                    videoTime >= subtitle.startTime && videoTime < subtitle.endTime
-//                }
                 .subscribe { publishSubject.onNext(it) }
     }
 
@@ -112,38 +122,7 @@ open class TranslateActivity : AppCompatActivity() {
     }
 
     open fun setVideoContent(videoView: VideoView) {
-        video_view.setVideoPath(Environment.getExternalStorageDirectory().absolutePath + "/example.mp4")
-    }
-
-    inner class MyScrollListener : RecyclerView.OnScrollListener() {
-        var lastPosition = 0
-        var currentState = 0
-        override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
-            super.onScrollStateChanged(recyclerView, newState)
-            currentState = newState
-            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                val firstVisibleItem = (recyclerView?.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
-                if (firstVisibleItem != lastPosition) {
-                    lastPosition = firstVisibleItem
-                    videoGoTo(firstVisibleItem)
-                }
-            }
-        }
-    }
-
-    fun getCurrentSubtitlePosition(): Int {
-        val videoTime = video_view.currentPosition
-        for (i in 0..subtitles.size - 1) {
-            if (videoTime <= subtitles[i].endTime) {
-                return if (i > 0) i - 1 else 0
-            }
-        }
-        return 0
-    }
-
-    fun videoGoTo(position: Int) {
-        publishSubject.onNext(position)
-        video_view.seekTo(subtitles[position].startTime)
+        // todo
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -168,6 +147,13 @@ open class TranslateActivity : AppCompatActivity() {
         super.onRestoreInstanceState(savedInstanceState)
         val edited = savedInstanceState?.getSerializable(EDITED) as HashMap<Int, String>
         adapter?.edited = edited
+    }
+
+    class StopVideoBehavior(var touchListener: ((View, MotionEvent) -> Unit)) : CoordinatorLayout.Behavior<View>() {
+        override fun onInterceptTouchEvent(parent: CoordinatorLayout, child: View, ev: MotionEvent): Boolean {
+            touchListener.invoke(child, ev)
+            return false
+        }
     }
 
 }

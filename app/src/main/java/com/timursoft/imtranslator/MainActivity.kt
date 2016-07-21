@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        startActivity(Intent(this, ExampleTranslateActivity::class.java))
     }
 
     fun onClick(view: View) {

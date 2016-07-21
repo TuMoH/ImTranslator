@@ -2,13 +2,12 @@ package com.timursoft.imtranslator
 
 import android.net.Uri
 import android.view.Menu
-import android.widget.VideoView
 import java.io.InputStream
 
 class ExampleTranslateActivity : TranslateActivity() {
 
     override fun getSubtitleIS(): InputStream {
-        return resources.openRawResource(R.raw.example_subtitle)
+        return assets.open("example_subtitle.srt")
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -18,8 +17,8 @@ class ExampleTranslateActivity : TranslateActivity() {
     }
 
     override fun setVideoContent(videoView: VideoView) {
-        val uri = Uri.parse("android.resource://" + packageName + "/" + R.raw.example_video)
-        videoView.setVideoURI(uri)
+        val uri = Uri.parse("/android_asset/example_video.mp4")
+        videoView.setVideoUri(uri)
     }
 
 }
