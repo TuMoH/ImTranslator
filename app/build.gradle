@@ -25,9 +25,9 @@ android {
                 storePassword properties.getProperty('KEYSTORE_PASSWORD')
                 keyAlias properties.getProperty('KEY_ALIAS')
                 keyPassword properties.getProperty('KEY_PASSWORD')
-            }
-            catch (ex) {
-                throw new InvalidUserDataException("You should define KEY info in local.properties.")
+            } catch (e) {
+                println("You should define sign info in local.properties.")
+                e.printStackTrace()
             }
         }
     }
