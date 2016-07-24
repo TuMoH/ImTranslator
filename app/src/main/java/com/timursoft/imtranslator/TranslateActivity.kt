@@ -20,6 +20,7 @@ import com.timursoft.subtitleparser.IOHelper
 import com.timursoft.subtitleparser.Subtitle
 import kotlinx.android.synthetic.main.activity_translate.*
 import rx.Observable
+import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.PublishSubject
 import java.io.File
@@ -35,7 +36,7 @@ open class TranslateActivity : AppCompatActivity() {
     companion object {
         val FILE_PATH = "FILE_PATH"
         val EDITED = "EDITED"
-        val VIDEO_OFFSET = 80
+        val VIDEO_OFFSET = 300
         val FILE_PATH_PATTERN = Pattern.compile("^(.*)/([^/]*)\\.[^\\./]*$")!!
         val VIDEO_FILE_PATTERN = Pattern.compile(".*\\.(mp4|3gp|ts|webm|mkv)$")!!
     }
@@ -44,6 +45,7 @@ open class TranslateActivity : AppCompatActivity() {
     private var layoutManager: LinearLayoutManager? = null
     private val subtitles = ArrayList<Subtitle>()
     private val publishSubject: PublishSubject<Int> = PublishSubject.create()
+    private var delaySubscription: Subscription? = null
     private var lastPlayedPosition = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,55 +76,66 @@ open class TranslateActivity : AppCompatActivity() {
         (recycler_layout.layoutParams as CoordinatorLayout.LayoutParams).behavior =
                 StopVideoBehavior(touchListener = { view, motionEvent ->
                     if (MotionEvent.ACTION_DOWN == motionEvent.action && video_view.isPlaying) {
-                        video_view.pause()
-                        ic_play_pause.visibility = View.VISIBLE
+                        pause()
                     }
                 })
 
         video_view.setOnTouchListener { view, motionEvent ->
             if (MotionEvent.ACTION_DOWN == motionEvent.action) {
                 if (video_view.isPlaying) {
-                    video_view.pause()
-                    ic_play_pause.visibility = View.VISIBLE
+                    pause()
                 } else {
-                    val position = layoutManager!!.findFirstVisibleItemPosition()
-                    if (position != lastPlayedPosition) {
-                        video_view.seekTo(subtitles[position].startTime - VIDEO_OFFSET)
-                    }
-                    ic_play_pause.visibility = View.GONE
-                    video_view.start()
-                    publishSubject.onNext(position)
+                    play()
                 }
                 return@setOnTouchListener true
             }
             return@setOnTouchListener false
         }
         video_view.setMeasureBasedOnAspectRatioEnabled(true)
-        // todo 1000 мало
-        video_view.setOnPreparedListener(OnPreparedListener { video_view.layoutParams.height = 1000 })
+        video_view.setOnPreparedListener(OnPreparedListener {
+            video_view.layoutParams.height = 10000
+            ic_play_pause.visibility = View.VISIBLE
+        })
         video_view.setVideoUri(getVideoContent())
         video_view.requestFocus(View.FOCUSABLES_ALL)
 
-        val psShare = publishSubject.share()
-
-        psShare.doOnEach { lastPlayedPosition = it.value as Int }
+        publishSubject.filter { video_view.isPlaying }
+                .doOnEach { lastPlayedPosition = it.value as Int }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     // todo нужен плавный скролл
                     layoutManager?.scrollToPositionWithOffset(it, 0)
                 }
+    }
 
-        psShare.map { it + 1 }
+    private fun pause() {
+        video_view.pause()
+        ic_play_pause.visibility = View.VISIBLE
+        delaySubscription?.unsubscribe()
+    }
+
+    private fun play() {
+        if (delaySubscription != null && !delaySubscription!!.isUnsubscribed) {
+            delaySubscription?.unsubscribe()
+        }
+        delaySubscription = publishSubject.map { it + 1 }
                 .filter { it < subtitles.size }
                 .delay {
-                    val delay = subtitles[it].startTime - video_view.currentPosition
+                    var delay = subtitles[it].startTime - video_view.currentPosition - VIDEO_OFFSET
+                    if (delay < 0) delay = 0
                     Observable.timer(delay.toLong(), TimeUnit.MILLISECONDS)
                 }
                 // todo добавить подсветку итема ???
-                // todo отписаться при стопе
                 // todo rxLifeCycle
-                .filter { video_view.isPlaying }
                 .subscribe { publishSubject.onNext(it) }
+
+        val position = layoutManager!!.findFirstVisibleItemPosition()
+        if (position != lastPlayedPosition) {
+            video_view.seekTo(subtitles[position].startTime - VIDEO_OFFSET)
+        }
+        ic_play_pause.visibility = View.GONE
+        video_view.start()
+        publishSubject.onNext(position)
     }
 
     protected open fun getSubtitlesContent(): InputStream? {
