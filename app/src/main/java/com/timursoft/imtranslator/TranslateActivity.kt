@@ -18,6 +18,8 @@ import com.nbsp.materialfilepicker.ui.FilePickerActivity
 import com.timursoft.subtitleparser.FormatSRT
 import com.timursoft.subtitleparser.IOHelper
 import com.timursoft.subtitleparser.Subtitle
+import com.trello.rxlifecycle.components.support.RxAppCompatActivity
+import com.trello.rxlifecycle.kotlin.bindToLifecycle
 import kotlinx.android.synthetic.main.activity_translate.*
 import rx.Observable
 import rx.Subscription
@@ -31,7 +33,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-open class TranslateActivity : AppCompatActivity() {
+open class TranslateActivity : RxAppCompatActivity() {
 
     companion object {
         val FILE_PATH = "FILE_PATH"
@@ -98,14 +100,24 @@ open class TranslateActivity : AppCompatActivity() {
         })
         video_view.setVideoUri(getVideoContent())
         video_view.requestFocus(View.FOCUSABLES_ALL)
+    }
+
+    override fun onResume() {
+        super.onResume()
 
         publishSubject.filter { video_view.isPlaying }
                 .doOnEach { lastPlayedPosition = it.value as Int }
                 .observeOn(AndroidSchedulers.mainThread())
+                .bindToLifecycle(this)
                 .subscribe {
                     // todo нужен плавный скролл
                     layoutManager?.scrollToPositionWithOffset(it, 0)
                 }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        pause()
     }
 
     private fun pause() {
@@ -126,7 +138,6 @@ open class TranslateActivity : AppCompatActivity() {
                     Observable.timer(delay.toLong(), TimeUnit.MILLISECONDS)
                 }
                 // todo добавить подсветку итема ???
-                // todo rxLifeCycle
                 .subscribe { publishSubject.onNext(it) }
 
         val position = layoutManager!!.findFirstVisibleItemPosition()
