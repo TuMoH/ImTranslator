@@ -9,32 +9,30 @@ import android.view.View
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.regex.Pattern
+import permissions.dispatcher.RuntimePermissions
+import permissions.dispatcher.NeedsPermission
+import android.Manifest
 
+@RuntimePermissions
 class MainActivity : AppCompatActivity() {
 
     companion object {
         val TAG = "#ImTrans"
-        private val CHOOSE_FILE_RESULT_CODE = 1
+        val FILE_PICKER_RESULT_CODE = 1
+        val SUB_FILE_PATTERN = Pattern.compile(".*\\.(srt|ass|ssa)$")!!
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-        startActivity(Intent(this, ExampleTranslateActivity::class.java))
     }
 
     fun onClick(view: View) {
         when (view.id) {
             R.id.button -> {
-                // todo check permission
-                MaterialFilePicker()
-                        .withActivity(this)
-                        .withRequestCode(CHOOSE_FILE_RESULT_CODE)
-//                .withFilter(Pattern.compile(".*\\.txt$")) // Filtering files and directories by file name using regexp
-//                .withFilterDirectories(true) // Set directories filterable (false by default)
-//                .withHiddenFiles(true) // Show hidden files and folders
-                        .start();
+                MainActivityPermissionsDispatcher.showFilePickerWithCheck(this)
             }
             R.id.button_example -> {
                 startActivity(Intent(this, ExampleTranslateActivity::class.java))
@@ -44,10 +42,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CHOOSE_FILE_RESULT_CODE) {
+        if (requestCode == FILE_PICKER_RESULT_CODE) {
             if (resultCode == RESULT_OK) {
                 val filePath = data?.getStringExtra(FilePickerActivity.RESULT_FILE_PATH)
-                Log.e(TAG, "Filepath = " + filePath)
                 val intent = Intent(this, TranslateActivity::class.java)
                 intent.putExtra(TranslateActivity.FILE_PATH, filePath)
                 startActivity(intent)
@@ -55,6 +52,20 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "File not found. resultCode = " + resultCode)
             }
         }
+    }
+
+    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    fun showFilePicker() {
+        MaterialFilePicker()
+                .withActivity(this)
+                .withRequestCode(FILE_PICKER_RESULT_CODE)
+                .withFilter(SUB_FILE_PATTERN)
+                .start()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults)
     }
 
 }
