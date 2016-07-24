@@ -1,27 +1,34 @@
 package com.timursoft.imtranslator
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.support.design.widget.CoordinatorLayout
+import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import com.devbrackets.android.exomedia.listener.OnPreparedListener
+import com.nbsp.materialfilepicker.MaterialFilePicker
+import com.nbsp.materialfilepicker.ui.FilePickerActivity
 import com.timursoft.subtitleparser.FormatSRT
 import com.timursoft.subtitleparser.IOHelper
 import com.timursoft.subtitleparser.Subtitle
-import com.timursoft.subtitleparser.SubtitleObject
 import kotlinx.android.synthetic.main.activity_translate.*
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.PublishSubject
+import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 
 open class TranslateActivity : AppCompatActivity() {
 
@@ -29,14 +36,15 @@ open class TranslateActivity : AppCompatActivity() {
         val FILE_PATH = "FILE_PATH"
         val EDITED = "EDITED"
         val VIDEO_OFFSET = 80
+        val FILE_PATH_PATTERN = Pattern.compile("^(.*)/([^/]*)\\.[^\\./]*$")!!
+        val VIDEO_FILE_PATTERN = Pattern.compile(".*\\.(mp4|3gp|ts|webm|mkv)$")!!
     }
 
-    var subtitleObject: SubtitleObject? = null
-    var adapter: SubtitleRecyclerAdapter? = null
-    var layoutManager: LinearLayoutManager? = null
-    val subtitles = ArrayList<Subtitle>()
-    val publishSubject: PublishSubject<Int> = PublishSubject.create()
-    var lastPlayedPosition = 0
+    private var adapter: SubtitleRecyclerAdapter? = null
+    private var layoutManager: LinearLayoutManager? = null
+    private val subtitles = ArrayList<Subtitle>()
+    private val publishSubject: PublishSubject<Int> = PublishSubject.create()
+    private var lastPlayedPosition = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,9 +57,9 @@ open class TranslateActivity : AppCompatActivity() {
         try {
             // todo поддержка всех форматов
             val formatSRT = FormatSRT()
-            subtitleObject = formatSRT.parse(IOHelper.streamToString(getSubtitleIS()))
+            val subtitleObject = formatSRT.parse(IOHelper.streamToString(getSubtitlesContent()))
             if (subtitleObject != null) {
-                subtitles.addAll(subtitleObject!!.subtitles.values)
+                subtitles.addAll(subtitleObject.subtitles.values)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -92,7 +100,7 @@ open class TranslateActivity : AppCompatActivity() {
         video_view.setMeasureBasedOnAspectRatioEnabled(true)
         // todo 1000 мало
         video_view.setOnPreparedListener(OnPreparedListener { video_view.layoutParams.height = 1000 })
-        setVideoContent(video_view)
+        video_view.setVideoUri(getVideoContent())
         video_view.requestFocus(View.FOCUSABLES_ALL)
 
         val psShare = publishSubject.share()
@@ -117,12 +125,54 @@ open class TranslateActivity : AppCompatActivity() {
                 .subscribe { publishSubject.onNext(it) }
     }
 
-    open fun getSubtitleIS(): InputStream {
+    protected open fun getSubtitlesContent(): InputStream? {
         return FileInputStream(intent.getStringExtra(FILE_PATH))
     }
 
-    open fun setVideoContent(videoView: VideoView) {
-        // todo
+    protected open fun getVideoContent(): Uri? {
+        val subPath = intent.getStringExtra(FILE_PATH)
+
+        val matcher = FILE_PATH_PATTERN.matcher(subPath)
+        if (matcher.find()) {
+            val dir = matcher.group(1)
+            val fileName = matcher.group(2)
+
+            val videoFile = File(dir).listFiles().find {
+                fileName.equals(it.nameWithoutExtension, true)
+                        && !MainActivity.SUB_FILE_PATTERN.matcher(it.name).matches()
+            }
+            if (videoFile == null) {
+                Snackbar.make(app_bar, R.string.ERROR_video_not_found, Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.ACTION_check) {
+                            MaterialFilePicker()
+                                    .withActivity(this)
+                                    .withRequestCode(MainActivity.FILE_PICKER_RESULT_CODE)
+                                    .withFilter(VIDEO_FILE_PATTERN)
+                                    .start()
+                        }
+                        .show()
+            } else {
+                if (!VIDEO_FILE_PATTERN.matcher(videoFile.name).matches()) {
+                    Snackbar.make(app_bar, R.string.ERROR_video_format_not_supported,
+                            Snackbar.LENGTH_INDEFINITE).show()
+                } else {
+                    return Uri.parse(videoFile.absolutePath)
+                }
+            }
+        }
+        return null
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == MainActivity.FILE_PICKER_RESULT_CODE) {
+            if (resultCode == RESULT_OK) {
+                val filePath = data?.getStringExtra(FilePickerActivity.RESULT_FILE_PATH)
+                video_view.setVideoUri(Uri.parse(filePath))
+            } else {
+                Log.e(MainActivity.TAG, "File not found. resultCode = " + resultCode)
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -133,9 +183,14 @@ open class TranslateActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
         when (menuItem.itemId) {
             android.R.id.home -> onBackPressed()
-//            R.id.action_save ->
+            R.id.action_save -> save()
         }
         return super.onOptionsItemSelected(menuItem)
+    }
+
+    protected open fun save() {
+        // todo реализовать
+        Snackbar.make(app_bar, R.string.INFO_saved, Snackbar.LENGTH_SHORT).show()
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {

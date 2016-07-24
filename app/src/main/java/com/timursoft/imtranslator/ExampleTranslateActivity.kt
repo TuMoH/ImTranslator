@@ -1,24 +1,22 @@
 package com.timursoft.imtranslator
 
 import android.net.Uri
-import android.view.Menu
+import android.support.design.widget.Snackbar
+import kotlinx.android.synthetic.main.activity_translate.*
 import java.io.InputStream
 
 class ExampleTranslateActivity : TranslateActivity() {
 
-    override fun getSubtitleIS(): InputStream {
+    override fun getSubtitlesContent(): InputStream {
         return assets.open("example_subtitle.srt")
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        val result = super.onCreateOptionsMenu(menu)
-        menu.findItem(R.id.action_save).isVisible = false
-        return result
+    override fun getVideoContent(): Uri {
+        return Uri.parse("/android_asset/example_video.mp4")
     }
 
-    override fun setVideoContent(videoView: VideoView) {
-        val uri = Uri.parse("/android_asset/example_video.mp4")
-        videoView.setVideoUri(uri)
+    override fun save() {
+        Snackbar.make(app_bar, R.string.INFO_not_available_in_example, Snackbar.LENGTH_SHORT).show()
     }
 
 }

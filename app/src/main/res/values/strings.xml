@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">ImTranslator</string>
+
+    <string name="ERROR_video_not_found">Видео файл не найден</string>
+    <string name="ERROR_video_format_not_supported">Формат видео не поддерживается</string>
+
+    <string name="INFO_not_available_in_example">Недоступно в примере</string>
+    <string name="INFO_saved">Сохранено</string>
+
+    <string name="ACTION_check">Выбрать</string>
 </resources>
