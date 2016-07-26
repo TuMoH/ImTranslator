@@ -8,14 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
-import com.timursoft.subtitleparser.FormatASS
-import com.timursoft.subtitleparser.Subtitle
+import com.timursoft.suber.ParserASS
+import com.timursoft.suber.Sub
 import java.util.*
 
 /**
  * Created by TuMoH on 05.06.2016.
  */
-class SubtitleRecyclerAdapter(private val subtitles: List<Subtitle>) : RecyclerView.Adapter<SubtitleRecyclerAdapter.SubtitleVH>() {
+class SubtitleRecyclerAdapter(private val subtitles: List<Sub>) : RecyclerView.Adapter<SubtitleRecyclerAdapter.SubtitleVH>() {
 
     var edited = HashMap<Int, String>()
 
@@ -26,8 +26,8 @@ class SubtitleRecyclerAdapter(private val subtitles: List<Subtitle>) : RecyclerV
 
     override fun onBindViewHolder(holder: SubtitleVH, position: Int) {
         holder.line.text = (position + 1).toString()
-        holder.time.text = FormatASS.serializeTime(subtitles[position].startTime) +
-                " - " + FormatASS.serializeTime(subtitles[position].endTime)
+        holder.time.text = ParserASS.serializeTime(subtitles[position].startTime) +
+                " - " + ParserASS.serializeTime(subtitles[position].endTime)
         holder.content.text = subtitles[position].content
         holder.textChangeListener.position = position
         holder.textChangeListener.mute = true

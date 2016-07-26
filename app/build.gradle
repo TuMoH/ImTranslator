@@ -55,7 +55,7 @@ dependencies {
 
     compile 'com.nbsp:library:1.09'
 
-    compile 'com.github.TuMoH:subtitle-parser:1.0'
+    compile 'com.github.TuMoH:suber:1.1'
 
     compile 'io.reactivex:rxkotlin:0.60.0'
     compile 'io.reactivex:rxandroid:1.2.1'

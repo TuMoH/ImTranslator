@@ -2,13 +2,15 @@ package com.timursoft.imtranslator
 
 import android.net.Uri
 import android.support.design.widget.Snackbar
+import com.timursoft.suber.IOHelper
+import com.timursoft.suber.ParserSRT
+import com.timursoft.suber.SubFileObject
 import kotlinx.android.synthetic.main.activity_translate.*
-import java.io.InputStream
 
 class ExampleTranslateActivity : TranslateActivity() {
 
-    override fun getSubtitlesContent(): InputStream {
-        return assets.open("example_subtitle.srt")
+    override fun getSubFileObject(): SubFileObject? {
+        return ParserSRT().parse(IOHelper.stringFromIS(assets.open("example_subtitle.srt")))
     }
 
     override fun getVideoContent(): Uri {

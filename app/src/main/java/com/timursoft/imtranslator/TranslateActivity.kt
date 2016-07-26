@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
-import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import android.view.Menu
@@ -15,9 +14,9 @@ import android.view.View
 import com.devbrackets.android.exomedia.listener.OnPreparedListener
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
-import com.timursoft.subtitleparser.FormatSRT
-import com.timursoft.subtitleparser.IOHelper
-import com.timursoft.subtitleparser.Subtitle
+import com.timursoft.suber.Sub
+import com.timursoft.suber.SubFileObject
+import com.timursoft.suber.Suber.suber
 import com.trello.rxlifecycle.components.support.RxAppCompatActivity
 import com.trello.rxlifecycle.kotlin.bindToLifecycle
 import kotlinx.android.synthetic.main.activity_translate.*
@@ -26,9 +25,6 @@ import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.subjects.PublishSubject
 import java.io.File
-import java.io.FileInputStream
-import java.io.IOException
-import java.io.InputStream
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
@@ -45,7 +41,7 @@ open class TranslateActivity : RxAppCompatActivity() {
 
     private var adapter: SubtitleRecyclerAdapter? = null
     private var layoutManager: LinearLayoutManager? = null
-    private val subtitles = ArrayList<Subtitle>()
+    private val subtitles = ArrayList<Sub>()
     private val publishSubject: PublishSubject<Int> = PublishSubject.create()
     private var delaySubscription: Subscription? = null
     private var lastPlayedPosition = 0
@@ -58,15 +54,9 @@ open class TranslateActivity : RxAppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        try {
-            // todo поддержка всех форматов
-            val formatSRT = FormatSRT()
-            val subtitleObject = formatSRT.parse(IOHelper.streamToString(getSubtitlesContent()))
-            if (subtitleObject != null) {
-                subtitles.addAll(subtitleObject.subtitles.values)
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
+        val subFileObject = getSubFileObject()
+        if (subFileObject != null) {
+            subtitles.addAll(subFileObject.subs)
         }
 
         adapter = SubtitleRecyclerAdapter(subtitles)
@@ -149,8 +139,13 @@ open class TranslateActivity : RxAppCompatActivity() {
         publishSubject.onNext(position)
     }
 
-    protected open fun getSubtitlesContent(): InputStream? {
-        return FileInputStream(intent.getStringExtra(FILE_PATH))
+    protected open fun getSubFileObject(): SubFileObject? {
+        try {
+            return suber().parse(File(intent.getStringExtra(FILE_PATH)))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
     }
 
     protected open fun getVideoContent(): Uri? {
