@@ -1,18 +1,17 @@
 package com.timursoft.imtranslator
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.view.View
-
+import com.jakewharton.rxbinding.view.clicks
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.regex.Pattern
-import permissions.dispatcher.RuntimePermissions
 import permissions.dispatcher.NeedsPermission
-import android.Manifest
+import permissions.dispatcher.RuntimePermissions
+import java.util.regex.Pattern
 
 @RuntimePermissions
 class MainActivity : AppCompatActivity() {
@@ -27,17 +26,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-    }
 
-    fun onClick(view: View) {
-        when (view.id) {
-            R.id.button -> {
-                MainActivityPermissionsDispatcher.showFilePickerWithCheck(this)
-            }
-            R.id.button_example -> {
-                startActivity(Intent(this, ExampleTranslateActivity::class.java))
-            }
-        }
+        button.clicks().subscribe { MainActivityPermissionsDispatcher.showFilePickerWithCheck(this) }
+        button_example.clicks().subscribe { startActivity(Intent(this, ExampleTranslateActivity::class.java)) }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

@@ -7,9 +7,6 @@ import com.devbrackets.android.exomedia.core.exoplayer.EMExoPlayer
 import com.devbrackets.android.exomedia.core.video.ExoVideoView
 import com.devbrackets.android.exomedia.listener.OnPreparedListener
 
-/**
- * Created by TuMoH on 21.07.2016.
- */
 class VideoView : ExoVideoView {
 
     constructor(context: Context) : super(context) {

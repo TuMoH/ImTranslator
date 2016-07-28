@@ -12,6 +12,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import com.devbrackets.android.exomedia.listener.OnPreparedListener
+import com.jakewharton.rxbinding.view.touches
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
 import com.timursoft.suber.Sub
@@ -72,17 +73,15 @@ open class TranslateActivity : RxAppCompatActivity() {
                     }
                 })
 
-        video_view.setOnTouchListener { view, motionEvent ->
-            if (MotionEvent.ACTION_DOWN == motionEvent.action) {
-                if (video_view.isPlaying) {
-                    pause()
-                } else {
-                    play()
+        video_view.touches()
+                .filter { MotionEvent.ACTION_DOWN == it.action }
+                .subscribe {
+                    if (video_view.isPlaying) {
+                        pause()
+                    } else {
+                        play()
+                    }
                 }
-                return@setOnTouchListener true
-            }
-            return@setOnTouchListener false
-        }
         video_view.setMeasureBasedOnAspectRatioEnabled(true)
         video_view.setOnPreparedListener(OnPreparedListener {
             video_view.layoutParams.height = 10000
