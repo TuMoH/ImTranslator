@@ -34,6 +34,7 @@ open class TranslateActivity : RxAppCompatActivity() {
 
     companion object {
         val FILE_PATH = "FILE_PATH"
+        val SUB_FILE = "SUB_FILE"
         val EDITED = "EDITED"
         val VIDEO_OFFSET = 300
         val FILE_PATH_PATTERN = Pattern.compile("^(.*)/([^/]*)\\.[^\\./]*$")!!

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+    <data>
+        <variable name="position" type="int"/>
+        <variable name="subFile" type="com.timursoft.imtranslator.entity.SubFile"/>
+    </data>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="@dimen/bookshelf_padding"
+        android:paddingTop="@dimen/bookshelf_padding">
+
+        <TextView android:id="@+id/name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@{String.valueOf(position + 1) + @string/file_item_number + subFile.name}"/>
+
+    </RelativeLayout>
+</layout>
