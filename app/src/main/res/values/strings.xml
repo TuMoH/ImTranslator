@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">ImTranslator</string>
-    <string name="file_item_number">.&#160;</string>
+    <string name="menu_save">Save</string>
+    <string name="choose_file">Choose file</string>
+    <string name="last_opened">Last opened:</string>
 
     <string name="ERROR_video_not_found">Видео файл не найден</string>
     <string name="ERROR_video_format_not_supported">Формат видео не поддерживается</string>

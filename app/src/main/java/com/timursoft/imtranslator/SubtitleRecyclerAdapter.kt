@@ -8,16 +8,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
-import com.timursoft.suber.ParserASS
-import com.timursoft.suber.Sub
+import com.timursoft.imtranslator.entity.WrappedSub
 import java.util.*
 
 /**
  * Created by TuMoH on 05.06.2016.
  */
-class SubtitleRecyclerAdapter(private val subtitles: List<Sub>) : RecyclerView.Adapter<SubtitleRecyclerAdapter.SubtitleVH>() {
+class SubtitleRecyclerAdapter(private val subtitles: List<WrappedSub>) : RecyclerView.Adapter<SubtitleRecyclerAdapter.SubtitleVH>() {
 
-    var edited = HashMap<Int, String>()
+    val modified = ArrayList<Int>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SubtitleVH {
         val v = LayoutInflater.from(parent.context).inflate(R.layout.subtitle_item, parent, false)
@@ -26,12 +25,11 @@ class SubtitleRecyclerAdapter(private val subtitles: List<Sub>) : RecyclerView.A
 
     override fun onBindViewHolder(holder: SubtitleVH, position: Int) {
         holder.line.text = (position + 1).toString()
-        holder.time.text = ParserASS.serializeTime(subtitles[position].startTime) +
-                " - " + ParserASS.serializeTime(subtitles[position].endTime)
-        holder.content.text = subtitles[position].content
+        holder.time.text = subtitles[position].time
+        holder.content.text = subtitles[position].originalContent
         holder.textChangeListener.position = position
         holder.textChangeListener.mute = true
-        holder.newContent.setText(edited[position] ?: subtitles[position].content)
+        holder.newContent.setText(subtitles[position].sub.content)
         holder.textChangeListener.mute = false
     }
 
@@ -62,7 +60,8 @@ class SubtitleRecyclerAdapter(private val subtitles: List<Sub>) : RecyclerView.A
 
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             if (!mute) {
-                edited.put(position, s.toString())
+                subtitles[position].sub.content = s.toString()
+                modified.add(position)
             }
         }
 

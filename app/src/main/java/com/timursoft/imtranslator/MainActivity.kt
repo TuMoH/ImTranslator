@@ -1,8 +1,10 @@
 package com.timursoft.imtranslator
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
-import android.databinding.ViewDataBinding
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.RecyclerView
@@ -10,14 +12,17 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import com.jakewharton.rxbinding.view.clicks
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
-import com.timursoft.imtranslator.databinding.FileItemBinding
 import com.timursoft.imtranslator.entity.SubFile
 import com.timursoft.imtranslator.entity.SubFileEntity
 import com.timursoft.imtranslator.entity.WrappedSubEntity
+import com.timursoft.suber.IOHelper
 import com.timursoft.suber.ParserASS
+import com.timursoft.suber.ParserSRT
+import com.timursoft.suber.SubFileObject
 import com.timursoft.suber.Suber.suber
 import io.requery.Persistable
 import io.requery.android.QueryRecyclerAdapter
@@ -28,7 +33,6 @@ import permissions.dispatcher.NeedsPermission
 import permissions.dispatcher.RuntimePermissions
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
-import rx.lang.kotlin.onError
 import rx.schedulers.Schedulers
 import java.io.File
 import java.util.regex.Pattern
@@ -54,9 +58,22 @@ class MainActivity : AppCompatActivity() {
         MyApplication.appComponent.inject(this)
 
         button.clicks().subscribe { MainActivityPermissionsDispatcher.showFilePickerWithCheck(this) }
-        example.clicks().subscribe { startActivity(Intent(this, ExampleTranslateActivity::class.java)) }
 
+        bookshelf.addItemDecoration(DividerItemDecoration(this))
         bookshelf.adapter = SubFileAdapter()
+
+        val count = dataStore.count(SubFile::class.java).get().value()
+        if (count == 0) {
+            val subFile = SubFileEntity()
+            subFile.filePath = "example"
+            subFile.videoPath = "/android_asset/example_video.mp4"
+            subFile.name = "example"
+            subFile.uptime = 0
+
+            val subFileObject = ParserSRT().parse(IOHelper.stringFromIS(assets.open("example_subtitle.srt")))
+            wrapSubsAndFillSubFile(subFileObject, subFile)
+            dataStore.insert(subFile).subscribe { (bookshelf.adapter as SubFileAdapter).queryAsync() }
+        }
     }
 
     override fun onResume() {
@@ -68,37 +85,46 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == FILE_PICKER_RESULT_CODE) {
             if (resultCode == RESULT_OK) {
-                Observable.just(data?.getStringExtra(FilePickerActivity.RESULT_FILE_PATH))
-//                        .doOnEach { } // todo progress
-                        .subscribeOn(Schedulers.computation())
+                val filePath = data?.getStringExtra(FilePickerActivity.RESULT_FILE_PATH)
+
+                val oldSubFile = dataStore.select(SubFile::class.java)
+                        .where(SubFileEntity.FILE_PATH.eq(filePath)).get().firstOrNull()
+                if (oldSubFile != null) {
+                    toTranslateActivity(oldSubFile)
+                    return
+                }
+                Observable.just(filePath)
+                        .observeOn(Schedulers.computation())
                         .map { File(it) }
-                        .map { file ->
+                        .subscribe({ file ->
                             val subFile = SubFileEntity()
                             subFile.filePath = file.absolutePath
                             subFile.name = file.name
                             subFile.uptime = file.lastModified()
 
-                            suber().parse(file).subs.forEach { sub ->
-                                val wrappedSub = WrappedSubEntity()
-                                wrappedSub.sub = sub
-                                wrappedSub.time = ParserASS.serializeTime(sub.startTime) +
-                                        " - " + ParserASS.serializeTime(sub.endTime)
-                                wrappedSub.originalContent = sub.content
-                                wrappedSub.subFile = subFile
-                                subFile.subs.add(wrappedSub)
-                            }
-                            dataStore.insert(subFile).subscribe()
-                            subFile
-                        }
-                        .onError { Log.e(TAG, "Не удалось распарсить Файл субтитров", it) }
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe {
-                            // todo hide progress
-                            toTranslateActivity(it)
-                        }
+                            wrapSubsAndFillSubFile(suber().parse(file), subFile)
+
+                            dataStore.insert(subFile)
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe {
+                                        toTranslateActivity(it)
+                                    }
+                        }, { Log.e(TAG, "Не удалось распарсить Файл субтитров", it) })
             } else {
                 Log.e(TAG, "File not found. resultCode = " + resultCode)
             }
+        }
+    }
+
+    private fun wrapSubsAndFillSubFile(subFileObject: SubFileObject, subFile: SubFile) {
+        subFileObject.subs.forEach { sub ->
+            val wrappedSub = WrappedSubEntity()
+            wrappedSub.sub = sub
+            wrappedSub.time = ParserASS.serializeTime(sub.startTime) +
+                    " - " + ParserASS.serializeTime(sub.endTime)
+            wrappedSub.originalContent = sub.content
+            wrappedSub.subFile = subFile
+            subFile.subs.add(wrappedSub)
         }
     }
 
@@ -118,43 +144,74 @@ class MainActivity : AppCompatActivity() {
 
     fun toTranslateActivity(subFile: SubFile) {
         val intent = Intent(this, TranslateActivity::class.java)
-        intent.putExtra(TranslateActivity.SUB_FILE, subFile)
-        intent.putExtra(TranslateActivity.FILE_PATH, subFile.filePath)
+        intent.putExtra(TranslateActivity.SUB_FILE, subFile.id)
+        subFile.subs
         startActivity(intent)
     }
 
-    private inner class SubFileAdapter internal constructor() : QueryRecyclerAdapter<SubFileEntity,
-            BindingHolder<FileItemBinding>>(SubFileEntity.`$TYPE`), View.OnClickListener {
+    private inner class SubFileAdapter() : QueryRecyclerAdapter<SubFileEntity,
+            ViewHolder>(SubFileEntity.`$TYPE`), View.OnClickListener {
 
         override fun performQuery(): Result<SubFileEntity> {
-            // this is all persons in the db sorted by their name
-            // note this method in executed in a background thread.
-            // (Alternatively RxJava w/ RxBinding could be used)
-            return dataStore.select(SubFileEntity::class.java).get()
+            return dataStore.select(SubFileEntity::class.java).orderBy(SubFileEntity.ID.desc()).get()
         }
 
-        override fun onBindViewHolder(item: SubFileEntity, holder: BindingHolder<FileItemBinding>,
-                                      position: Int) {
-            holder.binding.subFile = item
-            holder.binding.position = position
+        override fun onBindViewHolder(item: SubFileEntity, holder: ViewHolder, position: Int) {
+            holder.name.text = item.name
+            holder.percent.text = item.percent.toString() + "%"
+            holder.itemView.tag = item
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BindingHolder<FileItemBinding> {
-            val inflater = LayoutInflater.from(parent.context)
-            val binding = FileItemBinding.inflate(inflater)
-            binding.root.tag = binding
-            binding.root.setOnClickListener(this)
-            return BindingHolder(binding)
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.file_item, parent, false)
+            view.setOnClickListener(this)
+            return ViewHolder(view)
         }
 
         override fun onClick(v: View) {
-            val binding = v.tag as? FileItemBinding
-            if (binding != null) {
-                toTranslateActivity(binding.subFile)
+            val subFile = v.tag as? SubFile
+            if (subFile != null) {
+                toTranslateActivity(subFile)
             }
         }
     }
 
-    internal class BindingHolder<B : ViewDataBinding>(val binding: B) : RecyclerView.ViewHolder(binding.root)
+    internal class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val name: TextView
+        val percent: TextView
+
+        init {
+            name = view.findViewById(R.id.file_item_name) as TextView
+            percent = view.findViewById(R.id.file_item_percent) as TextView
+        }
+    }
+
+    private inner class DividerItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
+        lateinit var divider: Drawable
+
+        init {
+            val styledAttributes = context.obtainStyledAttributes(intArrayOf(android.R.attr.listDivider))
+            divider = styledAttributes.getDrawable(0)
+            styledAttributes.recycle()
+        }
+
+        override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
+            val left = parent.paddingLeft
+            val right = parent.width - parent.paddingRight
+
+            val childCount = parent.childCount
+            for (i in 0..childCount - 1) {
+                val child = parent.getChildAt(i)
+
+                val params = child.layoutParams as RecyclerView.LayoutParams
+
+                val top = child.bottom + params.bottomMargin
+                val bottom = top + divider.intrinsicHeight
+
+                divider.setBounds(left, top, right, bottom)
+                divider.draw(c)
+            }
+        }
+    }
 
 }

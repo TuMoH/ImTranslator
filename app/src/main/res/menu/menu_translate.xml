@@ -6,7 +6,7 @@
     <item
         android:id="@+id/action_save"
         android:icon="@drawable/ic_save"
-        android:title="Save"
-        app:showAsAction="never" />
+        android:title="@string/menu_save"
+        app:showAsAction="always"/>
 
 </menu>

@@ -27,8 +27,8 @@ import static org.hamcrest.Matchers.is;
 public class ExampleTranslateActivityTest {
 
     @Rule
-    public ActivityTestRule<ExampleTranslateActivity> activityRule =
-            new ActivityTestRule<>(ExampleTranslateActivity.class);
+    public ActivityTestRule<TranslateActivity> activityRule =
+            new ActivityTestRule<>(TranslateActivity.class);
 
     @Test
     public void play_button() throws Exception {

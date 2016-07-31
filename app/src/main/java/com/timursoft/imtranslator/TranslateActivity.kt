@@ -15,11 +15,15 @@ import com.devbrackets.android.exomedia.listener.OnPreparedListener
 import com.jakewharton.rxbinding.view.touches
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
+import com.timursoft.imtranslator.entity.SubFile
+import com.timursoft.imtranslator.entity.SubFileEntity
 import com.timursoft.suber.Sub
 import com.timursoft.suber.SubFileObject
 import com.timursoft.suber.Suber.suber
 import com.trello.rxlifecycle.components.support.RxAppCompatActivity
 import com.trello.rxlifecycle.kotlin.bindToLifecycle
+import io.requery.Persistable
+import io.requery.rx.SingleEntityStore
 import kotlinx.android.synthetic.main.activity_translate.*
 import rx.Observable
 import rx.Subscription
@@ -29,24 +33,26 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+import javax.inject.Inject
 
 open class TranslateActivity : RxAppCompatActivity() {
 
     companion object {
-        val FILE_PATH = "FILE_PATH"
         val SUB_FILE = "SUB_FILE"
-        val EDITED = "EDITED"
         val VIDEO_OFFSET = 300
         val FILE_PATH_PATTERN = Pattern.compile("^(.*)/([^/]*)\\.[^\\./]*$")!!
         val VIDEO_FILE_PATTERN = Pattern.compile(".*\\.(mp4|3gp|ts|webm|mkv)$")!!
     }
 
-    private var adapter: SubtitleRecyclerAdapter? = null
-    private var layoutManager: LinearLayoutManager? = null
-    private val subtitles = ArrayList<Sub>()
+    private lateinit var adapter: SubtitleRecyclerAdapter
+    private lateinit var layoutManager: LinearLayoutManager
+    private lateinit var subFile: SubFile
     private val publishSubject: PublishSubject<Int> = PublishSubject.create()
     private var delaySubscription: Subscription? = null
     private var lastPlayedPosition = 0
+
+    @Inject
+    lateinit var dataStore: SingleEntityStore<Persistable>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,12 +62,11 @@ open class TranslateActivity : RxAppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        val subFileObject = getSubFileObject()
-        if (subFileObject != null) {
-            subtitles.addAll(subFileObject.subs)
-        }
+        MyApplication.appComponent.inject(this)
 
-        adapter = SubtitleRecyclerAdapter(subtitles)
+        subFile = getSubFile()
+
+        adapter = SubtitleRecyclerAdapter(subFile.subs)
         recycler_view.adapter = adapter
         layoutManager = recycler_view.layoutManager as LinearLayoutManager
         fast_scroller.setRecyclerView(recycler_view)
@@ -101,7 +106,7 @@ open class TranslateActivity : RxAppCompatActivity() {
                 .bindToLifecycle(this)
                 .subscribe {
                     // todo нужен плавный скролл
-                    layoutManager?.scrollToPositionWithOffset(it, 0)
+                    layoutManager.scrollToPositionWithOffset(it, 0)
                 }
     }
 
@@ -121,35 +126,34 @@ open class TranslateActivity : RxAppCompatActivity() {
             delaySubscription?.unsubscribe()
         }
         delaySubscription = publishSubject.map { it + 1 }
-                .filter { it < subtitles.size }
+                .filter { it < subFile.subs.size }
                 .delay {
-                    var delay = subtitles[it].startTime - video_view.currentPosition - VIDEO_OFFSET
+                    var delay = subFile.subs[it].sub.startTime - video_view.currentPosition - VIDEO_OFFSET
                     if (delay < 0) delay = 0
                     Observable.timer(delay.toLong(), TimeUnit.MILLISECONDS)
                 }
-                // todo добавить подсветку итема ???
+                // добавить подсветку итема ???
                 .subscribe { publishSubject.onNext(it) }
 
-        val position = layoutManager!!.findFirstVisibleItemPosition()
+        val position = layoutManager.findFirstVisibleItemPosition()
         if (position != lastPlayedPosition) {
-            video_view.seekTo(subtitles[position].startTime - VIDEO_OFFSET)
+            video_view.seekTo(subFile.subs[position].sub.startTime - VIDEO_OFFSET)
         }
         ic_play_pause.visibility = View.GONE
         video_view.start()
         publishSubject.onNext(position)
     }
 
-    protected open fun getSubFileObject(): SubFileObject? {
-        try {
-            return suber().parse(File(intent.getStringExtra(FILE_PATH)))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return null
+    protected open fun getSubFile(): SubFile {
+        return dataStore.select(SubFile::class.java).where(SubFileEntity.ID.eq(intent.getIntExtra(SUB_FILE, 0))).get().first()
     }
 
     protected open fun getVideoContent(): Uri? {
-        val subPath = intent.getStringExtra(FILE_PATH)
+        if (subFile.videoPath != null) {
+            return Uri.parse(subFile.videoPath)
+        }
+
+        val subPath = subFile.filePath
 
         val matcher = FILE_PATH_PATTERN.matcher(subPath)
         if (matcher.find()) {
@@ -175,6 +179,7 @@ open class TranslateActivity : RxAppCompatActivity() {
                     Snackbar.make(app_bar, R.string.ERROR_video_format_not_supported,
                             Snackbar.LENGTH_INDEFINITE).show()
                 } else {
+                    subFile.videoPath = videoFile.absolutePath
                     return Uri.parse(videoFile.absolutePath)
                 }
             }
@@ -187,6 +192,7 @@ open class TranslateActivity : RxAppCompatActivity() {
         if (requestCode == MainActivity.FILE_PICKER_RESULT_CODE) {
             if (resultCode == RESULT_OK) {
                 val filePath = data?.getStringExtra(FilePickerActivity.RESULT_FILE_PATH)
+                subFile.videoPath = filePath
                 video_view.setVideoUri(Uri.parse(filePath))
             } else {
                 Log.e(MainActivity.TAG, "File not found. resultCode = " + resultCode)
@@ -208,19 +214,23 @@ open class TranslateActivity : RxAppCompatActivity() {
     }
 
     protected open fun save() {
-        // todo реализовать
-        Snackbar.make(app_bar, R.string.INFO_saved, Snackbar.LENGTH_SHORT).show()
+        // todo реализовать сохранение на диск
+        dataStore.update(subFile).observeOn(AndroidSchedulers.mainThread()).subscribe {
+            Snackbar.make(app_bar, R.string.INFO_saved, Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
         super.onSaveInstanceState(outState)
-        outState?.putSerializable(EDITED, adapter?.edited)
+//        outState?.putParcelable(SUB_FILE, subFile)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
         super.onRestoreInstanceState(savedInstanceState)
-        val edited = savedInstanceState?.getSerializable(EDITED) as HashMap<Int, String>
-        adapter?.edited = edited
+//        val subFile = savedInstanceState?.getParcelable<SubFile>(SUB_FILE)
+//        if (subFile != null) {
+//            this.subFile = subFile
+//        }
     }
 
     class StopVideoBehavior(var touchListener: ((View, MotionEvent) -> Unit)) : CoordinatorLayout.Behavior<View>() {

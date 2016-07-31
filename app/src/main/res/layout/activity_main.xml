@@ -35,15 +35,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
-            android:gravity="center"
             android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
-            android:text="Last opened:" />
+            android:text="@string/last_opened"
+            android:textStyle="bold"
+            android:textColor="@color/colorAccent"
+            android:textSize="20sp" />
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/bookshelf"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_above="@+id/button"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:layout_below="@+id/opened_textView"
@@ -52,23 +55,13 @@
 
         <Button
             android:id="@+id/button"
+            style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
+           c android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            android:backgroundTint="@color/colorPrimary"
-            android:text="Choose file"
+            android:text="@string/choose_file"
             android:textColor="@color/white" />
-
-        <TextView
-            android:text="Example"
-            android:padding="10dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_above="@+id/button"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true"
-            android:id="@+id/example"/>
 
     </RelativeLayout>
 
