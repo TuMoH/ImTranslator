@@ -18,7 +18,7 @@ interface WrappedSub : Persistable, Parcelable {
     var originalContent: String
     var modified: Boolean
 
-    @get:ManyToOne
+    @get:ManyToOne(cascade = arrayOf(CascadeAction.DELETE, CascadeAction.SAVE))
     var subFile: SubFile
 
 }

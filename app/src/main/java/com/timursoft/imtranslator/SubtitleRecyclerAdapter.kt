@@ -8,10 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
+import com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
 import com.timursoft.imtranslator.entity.WrappedSub
 import java.util.*
 
-class SubtitleRecyclerAdapter(private val subtitles: List<WrappedSub>) : RecyclerView.Adapter<SubtitleRecyclerAdapter.SubtitleVH>() {
+class SubtitleRecyclerAdapter(private val subtitles: List<WrappedSub>) : RecyclerView.Adapter<SubtitleRecyclerAdapter.SubtitleVH>(), FastScrollRecyclerView.SectionedAdapter {
 
     val modified = ArrayList<Int>()
 
@@ -32,6 +33,10 @@ class SubtitleRecyclerAdapter(private val subtitles: List<WrappedSub>) : Recycle
 
     override fun getItemCount(): Int {
         return subtitles.size
+    }
+
+    override fun getSectionName(position: Int): String {
+        return (position + 1).toString()
     }
 
     class SubtitleVH internal constructor(itemView: View, internal val textChangeListener: TextChangeListener) : RecyclerView.ViewHolder(itemView) {

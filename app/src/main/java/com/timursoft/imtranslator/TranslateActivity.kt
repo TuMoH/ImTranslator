@@ -1,11 +1,13 @@
 package com.timursoft.imtranslator
 
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -64,12 +66,11 @@ open class TranslateActivity : RxAppCompatActivity() {
 
         subFile = getSubFile()
 
+        recycler_view.addItemDecoration(BottomDecorator(subFile.subs.size - 1))
         adapter = SubtitleRecyclerAdapter(subFile.subs)
         recycler_view.adapter = adapter
         layoutManager = recycler_view.layoutManager as LinearLayoutManager
         layoutManager.scrollToPositionWithOffset(subFile.lastPosition, 0)
-        fast_scroller.setRecyclerView(recycler_view)
-        recycler_view.addOnScrollListener(fast_scroller.onScrollListener)
 
         (recycler_layout.layoutParams as CoordinatorLayout.LayoutParams).behavior =
                 StopVideoBehavior(touchListener = { view, motionEvent ->
@@ -112,6 +113,7 @@ open class TranslateActivity : RxAppCompatActivity() {
     override fun onPause() {
         super.onPause()
         pause()
+        save()
     }
 
     private fun pause() {
@@ -240,24 +242,22 @@ open class TranslateActivity : RxAppCompatActivity() {
                 })
     }
 
-    override fun onSaveInstanceState(outState: Bundle?) {
-        super.onSaveInstanceState(outState)
-        // todo восстановление состояния
-//        outState?.putParcelable(SUB_FILE, subFile)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
-        super.onRestoreInstanceState(savedInstanceState)
-//        val subFile = savedInstanceState?.getParcelable<SubFile>(SUB_FILE)
-//        if (subFile != null) {
-//            this.subFile = subFile
-//        }
-    }
-
     class StopVideoBehavior(var touchListener: ((View, MotionEvent) -> Unit)) : CoordinatorLayout.Behavior<View>() {
         override fun onInterceptTouchEvent(parent: CoordinatorLayout, child: View, ev: MotionEvent): Boolean {
             touchListener.invoke(child, ev)
             return false
+        }
+    }
+
+    inner class BottomDecorator(val lastPosition: Int) : RecyclerView.ItemDecoration() {
+        override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+            super.getItemOffsets(outRect, view, parent, state)
+            if (lastPosition == parent.getChildAdapterPosition(view)) {
+                val lp = (view.layoutParams as RecyclerView.LayoutParams)
+                view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+                val itemHeight = view.measuredHeight + lp.topMargin + lp.bottomMargin
+                outRect.bottom = parent.height - itemHeight
+            }
         }
     }
 

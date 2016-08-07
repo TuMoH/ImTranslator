@@ -63,18 +63,14 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <android.support.v7.widget.RecyclerView
+            <com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
                 android:id="@+id/recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:layoutManager="LinearLayoutManager" />
-
-            <xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller
-                android:id="@+id/fast_scroller"
-                android:layout_width="@dimen/fast_scroller_width"
-                android:layout_height="match_parent"
-                android:layout_alignParentRight="true"
-                app:rfs_handleColor="@color/colorAccent" />
+                app:layoutManager="LinearLayoutManager"
+                app:fastScrollAutoHide="false"
+                app:fastScrollPopupBgColor="@color/colorAccent"
+                app:fastScrollThumbColor="@color/colorAccent"/>
 
         </RelativeLayout>
 
