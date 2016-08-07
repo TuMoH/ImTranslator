@@ -15,7 +15,9 @@ interface SubFile : Persistable, Parcelable {
     var videoPath: String?
     var imgPath: String?
     var uptime: Long
+
     var percent: Int
+    var lastPosition: Int
 
     @get:OneToMany(mappedBy = "subFile", cascade = arrayOf(CascadeAction.DELETE, CascadeAction.SAVE))
     val subs: MutableList<WrappedSub>

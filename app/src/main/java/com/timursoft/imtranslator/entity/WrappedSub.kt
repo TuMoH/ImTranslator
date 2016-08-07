@@ -16,6 +16,7 @@ interface WrappedSub : Persistable, Parcelable {
 
     var time: String
     var originalContent: String
+    var modified: Boolean
 
     @get:ManyToOne
     var subFile: SubFile

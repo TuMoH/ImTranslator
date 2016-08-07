@@ -17,8 +17,6 @@ import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
 import com.timursoft.imtranslator.entity.SubFile
 import com.timursoft.imtranslator.entity.SubFileEntity
-import com.timursoft.suber.Sub
-import com.timursoft.suber.SubFileObject
 import com.timursoft.suber.Suber.suber
 import com.trello.rxlifecycle.components.support.RxAppCompatActivity
 import com.trello.rxlifecycle.kotlin.bindToLifecycle
@@ -28,9 +26,9 @@ import kotlinx.android.synthetic.main.activity_translate.*
 import rx.Observable
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import rx.subjects.PublishSubject
 import java.io.File
-import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import javax.inject.Inject
@@ -69,6 +67,7 @@ open class TranslateActivity : RxAppCompatActivity() {
         adapter = SubtitleRecyclerAdapter(subFile.subs)
         recycler_view.adapter = adapter
         layoutManager = recycler_view.layoutManager as LinearLayoutManager
+        layoutManager.scrollToPositionWithOffset(subFile.lastPosition, 0)
         fast_scroller.setRecyclerView(recycler_view)
         recycler_view.addOnScrollListener(fast_scroller.onScrollListener)
 
@@ -214,14 +213,36 @@ open class TranslateActivity : RxAppCompatActivity() {
     }
 
     protected open fun save() {
-        // todo реализовать сохранение на диск
-        dataStore.update(subFile).observeOn(AndroidSchedulers.mainThread()).subscribe {
-            Snackbar.make(app_bar, R.string.INFO_saved, Snackbar.LENGTH_SHORT).show()
-        }
+        Observable.just(layoutManager.findFirstVisibleItemPosition())
+                .observeOn(Schedulers.computation())
+                .subscribe({ position ->
+                    subFile.lastPosition = position
+                    MainActivity.updatePercent(subFile)
+
+                    if (!subFile.name.equals(MainActivity.EXAMPLE_FILE_NAME)) {
+                        val file = File(subFile.filePath)
+                        val sfo = suber().parse(file)
+
+                        adapter.modified.forEach { i ->
+                            sfo.subs[i] = subFile.subs[i].sub
+                        }
+                        suber().serialize(sfo, file)
+                        subFile.uptime = file.lastModified()
+                        adapter.modified.clear()
+                    }
+
+                    dataStore.update(subFile)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe { Snackbar.make(app_bar, R.string.INFO_saved, Snackbar.LENGTH_SHORT).show() }
+                }, {
+                    Snackbar.make(app_bar, R.string.ERROR_save, Snackbar.LENGTH_SHORT).show()
+                    Log.e(MainActivity.TAG, "Не удалось сохранить!", it)
+                })
     }
 
     override fun onSaveInstanceState(outState: Bundle?) {
         super.onSaveInstanceState(outState)
+        // todo восстановление состояния
 //        outState?.putParcelable(SUB_FILE, subFile)
     }
 

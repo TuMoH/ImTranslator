@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.support.design.widget.Snackbar
+import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.RecyclerView
 import android.util.Log
@@ -43,12 +45,19 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         val TAG = "#ImTrans"
+        val EXAMPLE_FILE_NAME = "example"
         val FILE_PICKER_RESULT_CODE = 1
         val SUB_FILE_PATTERN = Pattern.compile(".*\\.(srt|ass|ssa)$")!!
+
+        fun updatePercent(subFile: SubFile) {
+            subFile.percent = subFile.subs.count { it.modified } * 100 / subFile.subs.size
+        }
     }
 
     @Inject
     lateinit var dataStore: SingleEntityStore<Persistable>
+
+    private lateinit var adapter: SubFileAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,26 +68,27 @@ class MainActivity : AppCompatActivity() {
 
         button.clicks().subscribe { MainActivityPermissionsDispatcher.showFilePickerWithCheck(this) }
 
+        adapter = SubFileAdapter()
         bookshelf.addItemDecoration(DividerItemDecoration(this))
-        bookshelf.adapter = SubFileAdapter()
+        bookshelf.adapter = adapter
 
         val count = dataStore.count(SubFile::class.java).get().value()
         if (count == 0) {
             val subFile = SubFileEntity()
-            subFile.filePath = "example"
+            subFile.filePath = EXAMPLE_FILE_NAME
             subFile.videoPath = "/android_asset/example_video.mp4"
-            subFile.name = "example"
+            subFile.name = EXAMPLE_FILE_NAME
             subFile.uptime = 0
 
             val subFileObject = ParserSRT().parse(IOHelper.stringFromIS(assets.open("example_subtitle.srt")))
             wrapSubsAndFillSubFile(subFileObject, subFile)
-            dataStore.insert(subFile).subscribe { (bookshelf.adapter as SubFileAdapter).queryAsync() }
+            dataStore.insert(subFile).subscribe { adapter.queryAsync() }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        (bookshelf.adapter as SubFileAdapter).queryAsync()
+        adapter.queryAsync()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -90,30 +100,34 @@ class MainActivity : AppCompatActivity() {
                 val oldSubFile = dataStore.select(SubFile::class.java)
                         .where(SubFileEntity.FILE_PATH.eq(filePath)).get().firstOrNull()
                 if (oldSubFile != null) {
-                    toTranslateActivity(oldSubFile)
+                    toTranslateActivityWithCheckFileUptime(oldSubFile)
                     return
                 }
-                Observable.just(filePath)
-                        .observeOn(Schedulers.computation())
-                        .map { File(it) }
-                        .subscribe({ file ->
-                            val subFile = SubFileEntity()
-                            subFile.filePath = file.absolutePath
-                            subFile.name = file.name
-                            subFile.uptime = file.lastModified()
-
-                            wrapSubsAndFillSubFile(suber().parse(file), subFile)
-
-                            dataStore.insert(subFile)
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .subscribe {
-                                        toTranslateActivity(it)
-                                    }
-                        }, { Log.e(TAG, "Не удалось распарсить Файл субтитров", it) })
+                exportSubFile(filePath)
             } else {
                 Log.e(TAG, "File not found. resultCode = " + resultCode)
             }
         }
+    }
+
+    private fun exportSubFile(filePath: String?) {
+        Observable.just(filePath)
+                .observeOn(Schedulers.computation())
+                .map { File(it) }
+                .subscribe({ file ->
+                    val subFile = SubFileEntity()
+                    subFile.filePath = file.absolutePath
+                    subFile.name = file.name
+                    subFile.uptime = file.lastModified()
+
+                    wrapSubsAndFillSubFile(suber().parse(file), subFile)
+
+                    dataStore.insert(subFile)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe {
+                                toTranslateActivity(it)
+                            }
+                }, { Log.e(TAG, "Не удалось распарсить Файл субтитров", it) })
     }
 
     private fun wrapSubsAndFillSubFile(subFileObject: SubFileObject, subFile: SubFile) {
@@ -142,15 +156,59 @@ class MainActivity : AppCompatActivity() {
         MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults)
     }
 
-    fun toTranslateActivity(subFile: SubFile) {
+    private fun toTranslateActivity(subFile: SubFile) {
         val intent = Intent(this, TranslateActivity::class.java)
         intent.putExtra(TranslateActivity.SUB_FILE, subFile.id)
         subFile.subs
         startActivity(intent)
     }
 
+    private fun toTranslateActivityWithCheckFileUptime(subFile: SubFile) {
+        val file = File(subFile.filePath)
+        if (file.lastModified() == subFile.uptime) {
+            toTranslateActivity(subFile)
+        } else {
+            Observable.just(file)
+                    .observeOn(Schedulers.computation())
+                    .subscribe({ file ->
+                        val sfo = suber().parse(file)
+                        if (sfo.subs.size != subFile.subs.size) {
+                            runOnUiThread {
+                                AlertDialog.Builder(this@MainActivity)
+                                        .setTitle(subFile.name)
+                                        .setMessage(R.string.INFO_subFile_changed)
+                                        .setPositiveButton(R.string.yes, { dialogInterface, which ->
+                                            dataStore.delete(subFile).subscribe { exportSubFile(subFile.filePath) }
+                                        })
+                                        .setNegativeButton(R.string.no, null)
+                                        .create()
+                                        .show()
+                            }
+                        } else {
+                            subFile.uptime = file.lastModified()
+
+                            for (i in 0..(subFile.subs.size - 1)) {
+                                val sub = subFile.subs[i]
+                                val newSub = sfo.subs[i]
+                                if (sub.sub.content != newSub.content) {
+                                    sub.sub.content = newSub.content
+                                    sub.modified = true
+                                }
+                            }
+                            updatePercent(subFile)
+                            dataStore.update(subFile)
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe { toTranslateActivity(it) }
+                        }
+                    }, {
+                        Snackbar.make(toolbar, R.string.ERROR_check_file, Snackbar.LENGTH_SHORT).show()
+                        Log.e(TAG, "Ошибка проверки файла!", it)
+                    })
+        }
+    }
+
     private inner class SubFileAdapter() : QueryRecyclerAdapter<SubFileEntity,
-            ViewHolder>(SubFileEntity.`$TYPE`), View.OnClickListener {
+            ViewHolder>(SubFileEntity.`$TYPE`) {
 
         override fun performQuery(): Result<SubFileEntity> {
             return dataStore.select(SubFileEntity::class.java).orderBy(SubFileEntity.ID.desc()).get()
@@ -164,15 +222,28 @@ class MainActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.file_item, parent, false)
-            view.setOnClickListener(this)
-            return ViewHolder(view)
-        }
-
-        override fun onClick(v: View) {
-            val subFile = v.tag as? SubFile
-            if (subFile != null) {
-                toTranslateActivity(subFile)
+            view.setOnClickListener { v ->
+                val subFile = v.tag as? SubFile
+                if (subFile != null) {
+                    toTranslateActivityWithCheckFileUptime(subFile)
+                }
             }
+            view.setOnLongClickListener { v ->
+                val subFile = v.tag as? SubFile
+                if (subFile != null) {
+                    AlertDialog.Builder(this@MainActivity)
+                            .setTitle(subFile.name)
+                            .setMessage(R.string.INFO_remove_subFile)
+                            .setPositiveButton(R.string.yes, { dialog, which ->
+                                dataStore.delete(subFile).subscribe { adapter.queryAsync() }
+                            })
+                            .setNegativeButton(R.string.no, null)
+                            .create()
+                            .show()
+                }
+                false
+            }
+            return ViewHolder(view)
         }
     }
 
@@ -187,7 +258,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private inner class DividerItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
-        lateinit var divider: Drawable
+        val divider: Drawable
 
         init {
             val styledAttributes = context.obtainStyledAttributes(intArrayOf(android.R.attr.listDivider))

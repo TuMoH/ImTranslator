@@ -11,9 +11,6 @@ import android.widget.TextView
 import com.timursoft.imtranslator.entity.WrappedSub
 import java.util.*
 
-/**
- * Created by TuMoH on 05.06.2016.
- */
 class SubtitleRecyclerAdapter(private val subtitles: List<WrappedSub>) : RecyclerView.Adapter<SubtitleRecyclerAdapter.SubtitleVH>() {
 
     val modified = ArrayList<Int>()
@@ -61,6 +58,7 @@ class SubtitleRecyclerAdapter(private val subtitles: List<WrappedSub>) : Recycle
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             if (!mute) {
                 subtitles[position].sub.content = s.toString()
+                subtitles[position].modified = true
                 modified.add(position)
             }
         }
