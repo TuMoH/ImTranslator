@@ -233,6 +233,7 @@ open class TranslateActivity : RxAppCompatActivity() {
                         adapter.modified.clear()
                     }
 
+                    dataStore.update(subFile.subs).subscribe()
                     dataStore.update(subFile)
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe { Snackbar.make(app_bar, R.string.INFO_saved, Snackbar.LENGTH_SHORT).show() }

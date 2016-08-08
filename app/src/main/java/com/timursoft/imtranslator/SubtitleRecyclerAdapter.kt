@@ -63,6 +63,7 @@ class SubtitleRecyclerAdapter(private val subtitles: List<WrappedSub>) : Recycle
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             if (!mute) {
                 subtitles[position].sub.content = s.toString()
+                subtitles[position].sub = subtitles[position].sub   // requery тупит без ресеттинга
                 subtitles[position].modified = true
                 modified.add(position)
             }
