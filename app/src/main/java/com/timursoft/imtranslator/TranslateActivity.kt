@@ -167,7 +167,7 @@ open class TranslateActivity : RxAppCompatActivity() {
             }
             if (videoFile == null) {
                 Snackbar.make(app_bar, R.string.ERROR_video_not_found, Snackbar.LENGTH_INDEFINITE)
-                        .setAction(R.string.ACTION_check) {
+                        .setAction(R.string.check) {
                             MaterialFilePicker()
                                     .withActivity(this)
                                     .withRequestCode(MainActivity.FILE_PICKER_RESULT_CODE)

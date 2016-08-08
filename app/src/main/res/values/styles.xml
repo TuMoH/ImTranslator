@@ -19,4 +19,12 @@
         <item name="android:background">@drawable/subtitle_edit_text_bcg</item>
     </style>
 
+    <style name="LinkedAlertDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:textViewStyle">@style/LinkedTextView</item>
+    </style>
+
+    <style name="LinkedTextView" parent="android:Widget.TextView">
+        <item name="android:autoLink">email</item>
+    </style>
+
 </resources>

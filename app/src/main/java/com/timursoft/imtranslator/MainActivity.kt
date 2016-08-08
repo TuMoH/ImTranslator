@@ -5,15 +5,14 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.RecyclerView
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.TextView
 import com.jakewharton.rxbinding.view.clicks
 import com.nbsp.materialfilepicker.MaterialFilePicker
@@ -205,6 +204,44 @@ class MainActivity : AppCompatActivity() {
                         Log.e(TAG, "Ошибка проверки файла!", it)
                     })
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
+        when (menuItem.itemId) {
+            R.id.action_rate -> rate()
+        }
+        return super.onOptionsItemSelected(menuItem)
+    }
+
+    private fun rate() {
+        val dialog = AlertDialog.Builder(this@MainActivity, R.style.LinkedAlertDialog)
+                .setTitle(R.string.rate_title)
+                .setMessage(R.string.rate_msg)
+                .setPositiveButton(R.string.like, { dialogInterface, which ->
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW,
+                                Uri.parse("market://details?id=" + packageName)))
+                    } catch (e: Exception) {
+                        startActivity(Intent(Intent.ACTION_VIEW,
+                                Uri.parse("http://play.google.com/store/apps/details?id=" + packageName)))
+                    }
+                })
+                .setNegativeButton(R.string.dont_like, { dialogInterface, which ->
+                    val intent = Intent(Intent.ACTION_SENDTO)
+                    intent.data = Uri.parse("mailto:tumolllaa@gmail.com")
+                    try {
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Snackbar.make(toolbar, R.string.ERROR_need_email_app, Snackbar.LENGTH_LONG).show()
+                    }
+                })
+                .create()
+        dialog.show()
     }
 
     private inner class SubFileAdapter() : QueryRecyclerAdapter<SubFileEntity,
