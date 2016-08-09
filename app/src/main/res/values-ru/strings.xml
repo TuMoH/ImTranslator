@@ -5,7 +5,7 @@
     <string name="menu_about">О приложении</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>
-    <string name="ok">ОК</string>
+    <string name="close">Закрыть</string>
     <string name="check">Выбрать</string>
     <string name="choose_file">Выбрать файл</string>
     <string name="last_opened">Последние проекты</string>
@@ -16,9 +16,9 @@
     <string name="like">Нравится</string>
     <string name="dont_like">Не нравится</string>
     <string name="about_title">Добро пожаловать!</string>
-    <string name="about_msg">На данный момент поддерживаются следующие форматы \nвидео: mp4, 3gp, ts, webm, mkv,
-        \nсубтитров: srt, ass, ssa. \nВ будущем этот список будет расширяться.
-        \nВы очень поможете разработчику, если напишете письмо со своими пожеланиями
+    <string name="about_msg">На данный момент поддерживаются следующие форматы \nвидео: mp4, 3gp, ts, webm, mkv
+        \nсубтитров: srt, ass, ssa \nВ будущем этот список будет расширяться.
+        \n\nВы очень поможете разработчику, если напишете письмо со своими пожеланиями
         форматов на адрес tumolllaa@gmail.com</string>
 
     <string name="ERROR_video_not_found">Видео файл не найден</string>

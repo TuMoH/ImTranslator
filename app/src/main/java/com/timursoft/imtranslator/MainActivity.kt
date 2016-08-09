@@ -251,7 +251,7 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this@MainActivity, R.style.LinkedAlertDialog)
                 .setTitle(R.string.about_title)
                 .setMessage(R.string.about_msg)
-                .setPositiveButton(R.string.ok, null)
+                .setPositiveButton(R.string.close, null)
                 .create()
                 .show()
     }

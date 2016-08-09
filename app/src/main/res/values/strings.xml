@@ -8,7 +8,7 @@
     <string name="last_opened">Last projects:</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
-    <string name="ok">OK</string>
+    <string name="close">Close</string>
     <string name="rate_title">Rate app</string>
     <string name="rate_msg">I really appreciate your opinion about the app, please rate it.
         \n\nIf you experience problems when using the app or emerged ideas for its development,
@@ -16,9 +16,9 @@
     <string name="like">Like</string>
     <string name="dont_like">Dislike</string>
     <string name="about_title">Welcome!</string>
-    <string name="about_msg">Currently supported formats \nvideo: mp4, 3gp, ts, webm, mkv,
-         \nsubtitles: srt, ass, ssa. \nIn the future this list will expand.
-         \nYou really help developers if write a letter with their wishes
+    <string name="about_msg">Currently supported formats \nvideo: mp4, 3gp, ts, webm, mkv
+         \nsubtitles: srt, ass, ssa \nIn the future this list will expand.
+         \n\nYou really help developers if write a letter with their wishes
          formats to address tumolllaa@gmail.com</string>
 
     <string name="ERROR_video_not_found">Video file not found</string>
