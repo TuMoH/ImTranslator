@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import com.devbrackets.android.exomedia.core.EMListenerMux
 import com.devbrackets.android.exomedia.core.exoplayer.EMExoPlayer
+import com.devbrackets.android.exomedia.core.listener.ExoPlayerListener
 import com.devbrackets.android.exomedia.core.video.ExoVideoView
 import com.devbrackets.android.exomedia.listener.OnPreparedListener
 
@@ -35,6 +36,10 @@ class VideoView : ExoVideoView {
 
     fun setOnPreparedListener(listener: OnPreparedListener) {
         listenerMux.setOnPreparedListener(listener)
+    }
+
+    fun addPlayerListener(listener: ExoPlayerListener) {
+        emExoPlayer.addListener(listener)
     }
 
     private inner class MuxNotifier : EMListenerMux.EMListenerMuxNotifier() {

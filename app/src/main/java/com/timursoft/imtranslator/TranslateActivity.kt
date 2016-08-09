@@ -13,7 +13,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
+import com.devbrackets.android.exomedia.core.exoplayer.EMExoPlayer
+import com.devbrackets.android.exomedia.core.listener.ExoPlayerListener
 import com.devbrackets.android.exomedia.listener.OnPreparedListener
+import com.google.android.exoplayer.ExoPlayer
 import com.jakewharton.rxbinding.view.touches
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
@@ -50,6 +53,7 @@ open class TranslateActivity : RxAppCompatActivity() {
     private val publishSubject: PublishSubject<Int> = PublishSubject.create()
     private var delaySubscription: Subscription? = null
     private var lastPlayedPosition = 0
+    private var videoEnded = false
 
     @Inject
     lateinit var dataStore: SingleEntityStore<Persistable>
@@ -91,9 +95,28 @@ open class TranslateActivity : RxAppCompatActivity() {
         video_view.setMeasureBasedOnAspectRatioEnabled(true)
         video_view.setOnPreparedListener(OnPreparedListener {
             video_view.layoutParams.height = 10000
-            ic_play_pause.visibility = View.VISIBLE
+            if (!video_view.isPlaying) {
+                ic_play_pause.visibility = View.VISIBLE
+            }
         })
         video_view.setVideoUri(getVideoContent())
+        video_view.addPlayerListener(object : ExoPlayerListener {
+            override fun onStateChanged(playWhenReady: Boolean, playbackState: Int) {
+                if (playbackState == ExoPlayer.STATE_ENDED) {
+                    ic_play_pause.visibility = View.VISIBLE
+                    videoEnded = true
+                }
+            }
+
+            override fun onVideoSizeChanged(width: Int, height: Int, unAppliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
+            }
+
+            override fun onError(emExoPlayer: EMExoPlayer?, e: Exception?) {
+            }
+
+            override fun onSeekComplete() {
+            }
+        })
         video_view.requestFocus(View.FOCUSABLES_ALL)
     }
 
@@ -136,6 +159,11 @@ open class TranslateActivity : RxAppCompatActivity() {
                 // добавить подсветку итема ???
                 .subscribe { publishSubject.onNext(it) }
 
+        if (videoEnded) {
+            videoEnded = false
+            lastPlayedPosition = 0
+            video_view.restart()
+        }
         val position = layoutManager.findFirstVisibleItemPosition()
         if (position != lastPlayedPosition) {
             video_view.seekTo(subFile.subs[position].sub.startTime - VIDEO_OFFSET)
