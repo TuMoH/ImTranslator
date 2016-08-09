@@ -18,13 +18,13 @@ android {
     signingConfigs {
         release {
             try {
-                Properties properties = new Properties()
-                properties.load(project.rootProject.file('local.properties').newDataInputStream())
+                def localProperties = new Properties()
+                localProperties.load(rootProject.file('local.properties').newDataInputStream())
 
-                storeFile file(properties.getProperty('KEY_PATH'))
-                storePassword properties.getProperty('KEYSTORE_PASSWORD')
-                keyAlias properties.getProperty('KEY_ALIAS')
-                keyPassword properties.getProperty('KEY_PASSWORD')
+                storeFile file(localProperties['KEY_PATH'])
+                storePassword localProperties['KEYSTORE_PASSWORD']
+                keyAlias localProperties['KEY_ALIAS']
+                keyPassword localProperties['KEY_PASSWORD']
             } catch (e) {
                 println("You should define sign info in local.properties.")
                 e.printStackTrace()
