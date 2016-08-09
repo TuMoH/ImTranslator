@@ -19,7 +19,7 @@
     <string name="about_msg">Currently supported formats \nvideo: mp4, 3gp, ts, webm, mkv
          \nsubtitles: srt, ass, ssa \nIn the future this list will expand.
          \n\nYou really help developers if write a letter with their wishes
-         formats to address tumolllaa@gmail.com</string>
+        formats to address tumolllaa@gmail.com</string>
 
     <string name="ERROR_video_not_found">Video file not found</string>
     <string name="ERROR_video_format_not_supported">The video format is not supported</string>
