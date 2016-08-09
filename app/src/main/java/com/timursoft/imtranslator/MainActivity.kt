@@ -73,6 +73,8 @@ class MainActivity : AppCompatActivity() {
 
         val count = dataStore.count(SubFile::class.java).get().value()
         if (count == 0) {
+            about()
+
             val subFile = SubFileEntity()
             subFile.filePath = EXAMPLE_FILE_NAME
             subFile.videoPath = "/android_asset/example_video.mp4"
@@ -214,12 +216,13 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
         when (menuItem.itemId) {
             R.id.action_rate -> rate()
+            R.id.action_about -> about()
         }
         return super.onOptionsItemSelected(menuItem)
     }
 
     private fun rate() {
-        val dialog = AlertDialog.Builder(this@MainActivity, R.style.LinkedAlertDialog)
+        AlertDialog.Builder(this@MainActivity, R.style.LinkedAlertDialog)
                 .setTitle(R.string.rate_title)
                 .setMessage(R.string.rate_msg)
                 .setPositiveButton(R.string.like, { dialogInterface, which ->
@@ -241,7 +244,16 @@ class MainActivity : AppCompatActivity() {
                     }
                 })
                 .create()
-        dialog.show()
+                .show()
+    }
+
+    private fun about() {
+        AlertDialog.Builder(this@MainActivity, R.style.LinkedAlertDialog)
+                .setTitle(R.string.about_title)
+                .setMessage(R.string.about_msg)
+                .setPositiveButton(R.string.ok, null)
+                .create()
+                .show()
     }
 
     private inner class SubFileAdapter() : QueryRecyclerAdapter<SubFileEntity,

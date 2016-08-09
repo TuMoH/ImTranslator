@@ -2,14 +2,24 @@
 <resources>
     <string name="menu_save">Сохранить</string>
     <string name="menu_rate">Оценить</string>
+    <string name="menu_about">О приложении</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>
+    <string name="ok">ОК</string>
     <string name="check">Выбрать</string>
+    <string name="choose_file">Выбрать файл</string>
+    <string name="last_opened">Последние проекты</string>
     <string name="rate_title">Оцените приложение</string>
-    <string name="rate_msg">Оцените, пожалуйста, приложение\n\nЕсли у вас возникли затруднения при работе
-        с приложением или появились идеи по его развитию, пишите мне на адрес tumolllaa@gmail.com</string>
+    <string name="rate_msg">Мне очень важно Ваше мнение о приложении, пожалуйста, оцените его.
+        \n\nЕсли у вас возникли затруднения при работе с приложением или появились идеи по его развитию,
+        пишите мне на адрес tumolllaa@gmail.com</string>
     <string name="like">Нравится</string>
     <string name="dont_like">Не нравится</string>
+    <string name="about_title">Добро пожаловать!</string>
+    <string name="about_msg">На данный момент поддерживаются следующие форматы \nвидео: mp4, 3gp, ts, webm, mkv,
+        \nсубтитров: srt, ass, ssa. \nВ будущем этот список будет расширяться.
+        \nВы очень поможете разработчику, если напишете письмо со своими пожеланиями
+        форматов на адрес tumolllaa@gmail.com</string>
 
     <string name="ERROR_video_not_found">Видео файл не найден</string>
     <string name="ERROR_video_format_not_supported">Формат видео не поддерживается</string>
@@ -20,6 +30,4 @@
     <string name="INFO_saved">Сохранено</string>
     <string name="INFO_remove_subFile">Вы действительно хотите удалить его из списка?</string>
     <string name="INFO_subFile_changed">Файл изменился! Экспортировать его заново?</string>
-    <string name="choose_file">Выбрать файл</string>
-    <string name="last_opened">Последние проекты</string>
 </resources>
