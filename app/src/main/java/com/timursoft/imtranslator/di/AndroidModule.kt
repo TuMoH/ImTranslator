@@ -17,14 +17,12 @@ class AndroidModule(private val application: Application) {
     @Provides
     @Singleton
     fun provideDataStore(): SingleEntityStore<Persistable> {
-        // override onUpgrade to handle migrating to a new version
         val source = DatabaseSource(application, Models.DEFAULT, 1)
 //        if (BuildConfig.DEBUG) {
 //            // use this in development mode to drop and recreate the tables on every upgrade
 //            source.setTableCreationMode(TableCreationMode.DROP_CREATE)
 //        }
-        val configuration = source.configuration
-        return RxSupport.toReactiveStore(EntityDataStore<Persistable>(configuration))
+        return RxSupport.toReactiveStore(EntityDataStore<Persistable>(source.configuration))
     }
 
 }
