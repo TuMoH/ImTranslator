@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         val TAG = "#ImTrans"
+        val EXAMPLE_VIDEO = "example_video.mp4"
         val EXAMPLE_FILE_NAME = "example"
         val FILE_PICKER_RESULT_CODE = 1
         val SUB_FILE_PATTERN = Pattern.compile(".*\\.(srt|ass|ssa)$")!!
@@ -85,6 +86,23 @@ class MainActivity : AppCompatActivity() {
             wrapSubsAndFillSubFile(subFileObject, subFile)
             dataStore.insert(subFile).subscribe { adapter.queryAsync() }
         }
+        val videoFile = File(filesDir, EXAMPLE_VIDEO)
+        if (!videoFile.exists()) {
+            dataStore.select(SubFileEntity::class.java)
+                    .where(SubFileEntity.FILE_PATH.equal(EXAMPLE_FILE_NAME))
+                    .get()
+                    .toObservable()
+                    .subscribe { subFile ->
+                        subFile.videoPath = filesDir.path + "/" + EXAMPLE_VIDEO
+                        dataStore.update(subFile).subscribe { adapter.queryAsync() }
+                    }
+
+            assets.open(EXAMPLE_VIDEO).use { input ->
+                videoFile.outputStream().use { output ->
+                    input.copyTo(output, 1024 * 1024)
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -114,7 +132,7 @@ class MainActivity : AppCompatActivity() {
     private fun exportSubFile(filePath: String?) {
         Observable.just(filePath)
                 .observeOn(Schedulers.computation())
-                .map { File(it) }
+                .map(::File)
                 .subscribe({ file ->
                     val subFile = SubFileEntity()
                     subFile.filePath = file.absolutePath

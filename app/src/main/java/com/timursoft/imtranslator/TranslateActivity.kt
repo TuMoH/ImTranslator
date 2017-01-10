@@ -10,10 +10,6 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.*
-import com.devbrackets.android.exomedia.core.exoplayer.EMExoPlayer
-import com.devbrackets.android.exomedia.core.listener.ExoPlayerListener
-import com.devbrackets.android.exomedia.listener.OnPreparedListener
-import com.google.android.exoplayer.ExoPlayer
 import com.jakewharton.rxbinding.view.touches
 import com.nbsp.materialfilepicker.MaterialFilePicker
 import com.nbsp.materialfilepicker.ui.FilePickerActivity
@@ -39,9 +35,9 @@ open class TranslateActivity : RxAppCompatActivity() {
 
     companion object {
         val SUB_FILE = "SUB_FILE"
-        val VIDEO_OFFSET = 300
+        val VIDEO_OFFSET = 0
         val FILE_PATH_PATTERN = Pattern.compile("^(.*)/([^/]*)\\.[^\\./]*$")!!
-        val VIDEO_FILE_PATTERN = Pattern.compile(".*\\.(mp4|3gp|ts|webm|mkv)$")!!
+        val VIDEO_FILE_PATTERN = Pattern.compile(".*\\.(mp4|3gp|ts|webm|mkv|avi)$")!!
     }
 
     private lateinit var adapter: SubtitleRecyclerAdapter
@@ -50,7 +46,6 @@ open class TranslateActivity : RxAppCompatActivity() {
     private val publishSubject: PublishSubject<Int> = PublishSubject.create()
     private var delaySubscription: Subscription? = null
     private var lastPlayedPosition = 0
-    private var videoEnded = false
 
     @Inject
     lateinit var dataStore: SingleEntityStore<Persistable>
@@ -58,7 +53,7 @@ open class TranslateActivity : RxAppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_translate)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -76,7 +71,7 @@ open class TranslateActivity : RxAppCompatActivity() {
 
         (recycler_layout.layoutParams as CoordinatorLayout.LayoutParams).behavior =
                 StopVideoBehavior(touchListener = { view, motionEvent ->
-                    if (MotionEvent.ACTION_DOWN == motionEvent.action && video_view.isPlaying) {
+                    if (MotionEvent.ACTION_DOWN == motionEvent.action && video_view.isPlaying()) {
                         pause()
                     }
                 })
@@ -84,44 +79,20 @@ open class TranslateActivity : RxAppCompatActivity() {
         video_view.touches()
                 .filter { MotionEvent.ACTION_DOWN == it.action }
                 .subscribe {
-                    if (video_view.isPlaying) {
+                    if (video_view.isPlaying()) {
                         pause()
                     } else {
                         play()
                     }
                 }
-        video_view.setMeasureBasedOnAspectRatioEnabled(true)
-        video_view.setOnPreparedListener(OnPreparedListener {
-            video_view.layoutParams.height = 10000
-            if (!video_view.isPlaying) {
-                ic_play_pause.visibility = View.VISIBLE
-            }
-        })
         video_view.setVideoUri(getVideoContent())
-        video_view.addPlayerListener(object : ExoPlayerListener {
-            override fun onStateChanged(playWhenReady: Boolean, playbackState: Int) {
-                if (playbackState == ExoPlayer.STATE_ENDED) {
-                    ic_play_pause.visibility = View.VISIBLE
-                    videoEnded = true
-                }
-            }
-
-            override fun onVideoSizeChanged(width: Int, height: Int, unAppliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
-            }
-
-            override fun onError(emExoPlayer: EMExoPlayer?, e: Exception?) {
-            }
-
-            override fun onSeekComplete() {
-            }
-        })
         video_view.requestFocus(View.FOCUSABLES_ALL)
     }
 
     override fun onResume() {
         super.onResume()
 
-        publishSubject.filter { video_view.isPlaying }
+        publishSubject.filter { video_view.isPlaying() }
                 .doOnEach { lastPlayedPosition = it.value as Int }
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this)
@@ -139,7 +110,6 @@ open class TranslateActivity : RxAppCompatActivity() {
 
     private fun pause() {
         video_view.pause()
-        ic_play_pause.visibility = View.VISIBLE
         delaySubscription?.unsubscribe()
     }
 
@@ -150,23 +120,26 @@ open class TranslateActivity : RxAppCompatActivity() {
         delaySubscription = publishSubject.map { it + 1 }
                 .filter { it < subFile.subs.size }
                 .delay {
-                    var delay = subFile.subs[it].sub.startTime - video_view.currentPosition - VIDEO_OFFSET
+                    var delay = subFile.subs[it].sub.startTime - video_view.getCurrentPosition() - VIDEO_OFFSET
+                    val text = "video delay: " + video_view.getCurrentPosition() +
+                            ", to: " + subFile.subs[it].sub.startTime + ", delay: " + delay
+//                    Log.e("#MY", text)
+                    tv1.post { tv1.text = text }
                     if (delay < 0) delay = 0
                     Observable.timer(delay.toLong(), TimeUnit.MILLISECONDS)
                 }
                 // добавить подсветку итема ???
                 .subscribe { publishSubject.onNext(it) }
 
-        if (videoEnded) {
-            videoEnded = false
-            lastPlayedPosition = 0
-            video_view.restart()
-        }
         val position = layoutManager.findFirstVisibleItemPosition()
         if (position != lastPlayedPosition) {
+            val text1 = "video 1: " + video_view.getCurrentPosition() + ", to: " + subFile.subs[position].sub.startTime
+//            Log.e("#MY", text1)
             video_view.seekTo(subFile.subs[position].sub.startTime - VIDEO_OFFSET)
+            val text2 = "video 2: " + video_view.getCurrentPosition()
+//            Log.e("#MY", text2)
+            tv2.text = text1 + "\n" + text2
         }
-        ic_play_pause.visibility = View.GONE
         video_view.start()
         publishSubject.onNext(position)
     }
@@ -202,13 +175,13 @@ open class TranslateActivity : RxAppCompatActivity() {
                         }
                         .show()
             } else {
-                if (!VIDEO_FILE_PATTERN.matcher(videoFile.name).matches()) {
-                    Snackbar.make(app_bar, R.string.ERROR_video_format_not_supported,
-                            Snackbar.LENGTH_INDEFINITE).show()
-                } else {
-                    subFile.videoPath = videoFile.absolutePath
-                    return Uri.parse(videoFile.absolutePath)
-                }
+//                if (!VIDEO_FILE_PATTERN.matcher(videoFile.name).matches()) {
+//                    Snackbar.make(app_bar, R.string.ERROR_video_format_not_supported,
+//                            Snackbar.LENGTH_INDEFINITE).show()
+//                } else {
+                subFile.videoPath = videoFile.absolutePath
+                return Uri.parse(videoFile.absolutePath)
+//                }
             }
         }
         return null
@@ -219,8 +192,8 @@ open class TranslateActivity : RxAppCompatActivity() {
         if (requestCode == MainActivity.FILE_PICKER_RESULT_CODE) {
             if (resultCode == RESULT_OK) {
                 val filePath = data?.getStringExtra(FilePickerActivity.RESULT_FILE_PATH)
-                subFile.videoPath = filePath
                 video_view.setVideoUri(Uri.parse(filePath))
+                subFile.videoPath = filePath
             } else {
                 Log.e(MainActivity.TAG, "File not found. resultCode = " + resultCode)
             }
@@ -247,7 +220,7 @@ open class TranslateActivity : RxAppCompatActivity() {
                     subFile.lastPosition = position
                     MainActivity.updatePercent(subFile)
 
-                    if (!subFile.name.equals(MainActivity.EXAMPLE_FILE_NAME)) {
+                    if (subFile.name != MainActivity.EXAMPLE_FILE_NAME) {
                         val file = File(subFile.filePath)
                         val sfo = suber().parse(file)
 

@@ -21,27 +21,13 @@
             app:layout_scrollFlags="scroll|enterAlways"
             app:titleEnabled="false">
 
-            <RelativeLayout
+            <com.timursoft.imtranslator.VideoView
+                android:id="@+id/video_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:animateLayoutChanges="true"
                 app:layout_collapseMode="parallax"
-                app:layout_scrollFlags="scroll|enterAlways">
-
-                <com.timursoft.imtranslator.VideoView
-                    android:id="@+id/video_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp" />
-
-                <ImageView
-                    android:id="@+id/ic_play_pause"
-                    android:visibility="invisible"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerInParent="true"
-                    android:src="@drawable/ic_play_circle_outline_24dp" />
-
-            </RelativeLayout>
+                app:layout_scrollFlags="scroll|enterAlways" />
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
@@ -51,6 +37,7 @@
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
         </android.support.design.widget.CollapsingToolbarLayout>
+
     </android.support.design.widget.AppBarLayout>
 
     <android.support.design.widget.CoordinatorLayout
@@ -63,14 +50,29 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentLeft="true"
+                android:id="@+id/tv1"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@id/tv1"
+                android:id="@+id/tv2"/>
+
             <com.simplecityapps.recyclerview_fastscroll.views.FastScrollRecyclerView
                 android:id="@+id/recycler_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:layoutManager="LinearLayoutManager"
                 app:fastScrollAutoHide="false"
                 app:fastScrollPopupBgColor="@color/colorAccent"
-                app:fastScrollThumbColor="@color/colorAccent"/>
+                app:fastScrollThumbColor="@color/colorAccent"
+                app:layoutManager="LinearLayoutManager"
+                android:layout_below="@+id/tv2" />
 
         </RelativeLayout>
 

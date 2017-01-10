@@ -43,13 +43,24 @@ android {
     }
 }
 
+ext {
+    supportLibrary = "23.4.0"
+    ijkplayer = "0.6.0"
+    requery = "1.0.0-rc4"
+    dagger = "2.6.1"
+    rxbinding = "0.4.0"
+    rxlifecycle = "0.6.1"
+    espresso = "2.2.2"
+    permissionsdispatcher = "2.1.3"
+}
+
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.android.support:recyclerview-v7:23.4.0'
-    compile 'com.android.support:cardview-v7:23.4.0'
-    compile 'com.android.support:design:23.4.0'
+    compile "com.android.support:appcompat-v7:$supportLibrary"
+    compile "com.android.support:recyclerview-v7:$supportLibrary"
+    compile "com.android.support:cardview-v7:$supportLibrary"
+    compile "com.android.support:design:$supportLibrary"
 
     compile 'xyz.danoz:recyclerviewfastscroller:0.1.3'
     compile 'com.simplecityapps:recyclerview-fastscroll:1.0.9'
@@ -60,41 +71,44 @@ dependencies {
 
     compile 'io.reactivex:rxkotlin:0.60.0'
     compile 'io.reactivex:rxandroid:1.2.1'
-    compile 'com.trello:rxlifecycle:0.6.1'
-    compile 'com.trello:rxlifecycle-components:0.6.1'
-    compile 'com.trello:rxlifecycle-kotlin:0.6.1'
-    compile 'com.jakewharton.rxbinding:rxbinding:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-kotlin:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-appcompat-v7:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-appcompat-v7-kotlin:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-design:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-design-kotlin:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-recyclerview-v7:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-recyclerview-v7-kotlin:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-support-v4:0.4.0'
-    compile 'com.jakewharton.rxbinding:rxbinding-support-v4-kotlin:0.4.0'
+    compile "com.trello:rxlifecycle:$rxlifecycle"
+    compile "com.trello:rxlifecycle-components:$rxlifecycle"
+    compile "com.trello:rxlifecycle-kotlin:$rxlifecycle"
+    compile "com.jakewharton.rxbinding:rxbinding:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-kotlin:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-appcompat-v7:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-appcompat-v7-kotlin:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-design:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-design-kotlin:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-recyclerview-v7:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-recyclerview-v7-kotlin:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-support-v4:$rxbinding"
+    compile "com.jakewharton.rxbinding:rxbinding-support-v4-kotlin:$rxbinding"
 
-    compile 'io.requery:requery:1.0.0-rc2'
-//    compile 'io.requery:requery-kotlin:1.0.0-rc2'
-    compile 'io.requery:requery-android:1.0.0-rc2'
-    kapt 'io.requery:requery-processor:1.0.0-rc2'
+    compile "io.requery:requery:$requery"
+//    compile "io.requery:requery-kotlin:$requery"
+    compile "io.requery:requery-android:$requery"
+    kapt "io.requery:requery-processor:$requery"
 
-    compile 'com.google.dagger:dagger:2.6'
-    kapt 'com.google.dagger:dagger-compiler:2.6'
+    compile "com.google.dagger:dagger:$dagger"
+    kapt "com.google.dagger:dagger-compiler:$dagger"
 
-    compile 'com.github.hotchemi:permissionsdispatcher:2.1.3'
-//    kapt 'com.github.hotchemi:permissionsdispatcher-processor:2.1.3'
+    compile "com.github.hotchemi:permissionsdispatcher:$permissionsdispatcher"
+//    kapt "com.github.hotchemi:permissionsdispatcher-processor:$permissionsdispatcher"
 
     compile ('com.devbrackets.android:exomedia:3.0.1'){
         exclude module: 'appcompat-v7'
     }
 
+    compile "tv.danmaku.ijk.media:ijkplayer-java:$ijkplayer"
+    compile "tv.danmaku.ijk.media:ijkplayer-exo:$ijkplayer"
+
     testCompile 'junit:junit:4.12'
-    androidTestCompile 'com.android.support:support-annotations:23.4.0'
+    androidTestCompile "com.android.support:support-annotations:$supportLibrary"
     androidTestCompile 'com.android.support.test:runner:0.5'
     androidTestCompile 'com.android.support.test:rules:0.5'
-    androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2.2'
-    androidTestCompile 'com.android.support.test.espresso:espresso-idling-resource:2.2.2'
+    androidTestCompile "com.android.support.test.espresso:espresso-core:$espresso"
+    androidTestCompile "com.android.support.test.espresso:espresso-idling-resource:$espresso"
     androidTestCompile ('com.android.support.test.espresso:espresso-contrib:2.2'){
         exclude module: 'appcompat-v7'
         exclude module: 'support-v4'
@@ -103,9 +117,10 @@ dependencies {
 }
 
 buildscript {
-    ext.kotlin_version = '1.0.3'
+    ext.kotlin_version = '1.0.4-eap-62'
     repositories {
         mavenCentral()
+        maven { url "https://dl.bintray.com/kotlin/kotlin-eap" }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
